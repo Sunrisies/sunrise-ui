@@ -5,11 +5,4 @@ export default defineConfig({
   dts: true,
   format: ["esm"],
   outDir: "dist",
-  //   splitting: false,
-  //   sourcemap: true,
-  //   clean: true,
-  //   esbuildOptions: (options) => {
-  //     options.jsxFactory = "React.createElement";
-  //     options.jsxFragment = "React.Fragment";
-  //   },
 });

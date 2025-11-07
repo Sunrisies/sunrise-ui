@@ -1,7 +1,11 @@
 {
     "$schema": "https://turborepo.com/schema.json",
+    "ui": "tui",
     "tasks": {
         "build": {
+            "dependsOn": [
+                "^build"
+            ],
             "outputs": [
                 "dist/**"
             ]
@@ -13,6 +17,12 @@
         },
         "dev": {
             "persistent": true,
+            "cache": false
+        },
+        "lint": {
+            "outputs": []
+        },
+        "clean": {
             "cache": false
         }
     }

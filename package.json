@@ -7,11 +7,19 @@
         "build": "pnpm run --recursive build",
         "clean": "pnpm run --recursive clean",
         "lint": "pnpm run --recursive lint",
-        "test": "pnpm run --recursive test"
+        "test": "pnpm run --recursive test",
+        "docs:dev": "pnpm --filter sunrise-ui-docs dev",
+        "docs:build": "pnpm --filter sunrise-ui-docs build",
+        "docs:preview": "pnpm --filter sunrise-ui-docs preview"
     },
     "devDependencies": {
         "typescript": "^5.0.0",
-        "turbo": "2.6.0"
+        "turbo": "2.6.0",
+        "@typescript-eslint/eslint-plugin": "^6.0.0",
+        "@typescript-eslint/parser": "^6.0.0",
+        "eslint": "^8.45.0",
+        "eslint-plugin-react-hooks": "^4.6.0",
+        "eslint-plugin-react-refresh": "^0.4.3"
     },
     "packageManager": "pnpm@10.0.0"
 }
