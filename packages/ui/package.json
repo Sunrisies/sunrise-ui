@@ -1,0 +1,21 @@
+{
+    "name": "sunrise/ui",
+    "version": "1.0.0",
+    "main": "dist/index.mjs",
+    "types": "dist/index.d.mts",
+    "modules": "dist/index.mjs",
+    "scripts": {
+        "dev": "tsup --watch",
+        "build": "tsup",
+        "clean": "rimraf dist"
+    },
+    "devDependencies": {
+        "react": "19.2.0",
+        "react-dom": "19.2.0"
+    },
+    "dependencies": {
+        "typescript": "5.9.3",
+        "tsup": "8.5.0",
+        "rimraf": "^5.0.5"
+    }
+}

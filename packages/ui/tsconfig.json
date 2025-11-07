@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "baseUrl": ".",
+        "module": "esnext",
+        "moduleResolution": "node",
+        "declaration": true,
+        "lib": [
+            "dom",
+            "dom.iterable",
+            "esnext"
+        ]
+    },
+    "include": [
+        "./src",
+    ], // 包含的目录或文件列表  
+}

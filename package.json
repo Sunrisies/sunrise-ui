@@ -1,0 +1,17 @@
+{
+    "name": "sunrise-ui",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "turbo dev",
+        "build": "pnpm run --recursive build",
+        "clean": "pnpm run --recursive clean",
+        "lint": "pnpm run --recursive lint",
+        "test": "pnpm run --recursive test"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "turbo": "2.6.0"
+    },
+    "packageManager": "pnpm@10.0.0"
+}
