@@ -9,19 +9,23 @@ export function load(app) {
     const fileReflections = new Map();
     console.log("开始加载自定义插件",);
     // 监听声明创建事件 
-    // app.converter.on(Converter.EVENT_CREATE_DECLARATION, (context, reflection) => {
-    //     console.log("开始监听声明创建事件", context);
-    //     if (!reflection.sources?.length) return;
+    app.converter.on(Converter.EVENT_CREATE_DECLARATION, (context, reflection) => {
+        console.log("开始监听声明创建事件");
+        const project = context.project;
+        project.children?.forEach((child) => {
+            console.log("child", child);
+        })
+        // if (!reflection.sources?.length) return;
 
-    //     const source = reflection.sources[0];
-    //     const filePath = path.relative(process.cwd(), source.fileName);
-    //     console.log("filePath", filePath);
-    //     console.log("reflection", reflection);
-    //     // 按文件路径组织反射对象
-    //     if (!fileReflections.has(filePath)) {
-    //         fileReflections.set(filePath, reflection);
-    //     }
-    // });
+        // const source = reflection.sources[0];
+        // const filePath = path.relative(process.cwd(), source.fileName);
+        // console.log("filePath", filePath);
+        // console.log("reflection", reflection);
+        // // 按文件路径组织反射对象
+        // if (!fileReflections.has(filePath)) {
+        //     fileReflections.set(filePath, reflection);
+        // }
+    });
 
     // 监听渲染开始事件
     // app.renderer.on(Renderer.EVENT_BEGIN, (event) => {

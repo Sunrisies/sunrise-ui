@@ -1,10 +1,11 @@
 /**
  * 预加载并缓存一组图片资源。
  * @public
- * 
+ *
  * @param imageUrls - 图片资源的URL数组
  * @returns 返回一个Promise，该Promise在所有图片加载完成后解析为一个包含HTMLImageElement对象的数组
- *
+ * @memberof module:browser/images
+ * @function 预加载并缓存一组图片资源。
  * @example
  * ```typescript
  * // 示例：预加载并缓存一组图片
@@ -17,24 +18,27 @@
  *   \});
  * ```
  */
-export const preloadAndCacheImages = (imageUrls: string[]): Promise<HTMLImageElement[]> => {
+export const preloadAndCacheImages = (
+  imageUrls: string[]
+): Promise<HTMLImageElement[]> => {
   return Promise.all(
     imageUrls.map(
       (url) =>
         new Promise<HTMLImageElement>((resolve, reject) => {
-          const image = new Image()
-          image.onload = () => resolve(image)
-          image.onerror = () => reject(new Error(`图片加载失败: ${url}`))
-          image.src = url
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error(`图片加载失败: ${url}`));
+          image.src = url;
         })
     )
-  )
-}
+  );
+};
 
 /**
  * 预加载并缓存图片资源。
  * @public
- * 
+ * @memberof module:browser/images
+ * @function 预加载并缓存图片资源
  * @param imageUrl - 图片资源的URL
  * @returns 返回一个Promise，该Promise在图片加载完成后解析为一个包含HTMLImageElement对象
  *
@@ -50,15 +54,17 @@ export const preloadAndCacheImages = (imageUrls: string[]): Promise<HTMLImageEle
  *   \});
  * ```
  */
-export const preloadAndCacheImage = (imageUrl: string): Promise<HTMLImageElement> => {
+export const preloadAndCacheImage = (
+  imageUrl: string
+): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
-    const img = new Image()
+    const img = new Image();
     img.onload = () => {
-      resolve(img)
-    }
+      resolve(img);
+    };
     img.onerror = () => {
-      reject(new Error('图片加载失败'))
-    }
-    img.src = imageUrl
-  })
-}
+      reject(new Error("图片加载失败"));
+    };
+    img.src = imageUrl;
+  });
+};

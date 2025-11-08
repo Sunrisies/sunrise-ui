@@ -1,0 +1,22 @@
+{
+  "name": "typedoc-vitepress-plugin",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "modules": "dist/index.mjs",
+  "scripts": {
+    "dev": "tsup --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "tsup": "8.5.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "typedoc": "^0.28.4"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ESNext", // 使用最新的 ECMAScript 标准  
+    "module": "ESNext", // 使用最新的 ECMAScript 模块系统  
+    "strict": true, // 启用所有严格类型检查选项  
+    "jsx": "react", // 如果您使用 JSX，则设置为 "react"  
+    "declaration": true, // 如果您想要生成类型声明文件，则启用此选项  
+    "sourceMap": false, // 生成 source maps  
+    "esModuleInterop": true, // 允许默认导入与 CommonJS 模块一起使用  
+    "outDir": "./temp", // 输出的目录  
+    "rootDir": "./src", // TypeScript 文件的根目录  
+    "declarationDir": "./types", // 类型声明文件的输出目录  
+    "moduleResolution": "node", // 使用 Node.js 风格的模块解析  
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable",
+      "scripthost"
+    ], // 包含的库文件列表  
+    // "types": ["node"] // 包含的类型声明文件列表  
+    "emitDeclarationOnly": false, // 只生成类型声明文件，不生成编译后的 JavaScript 文件  
+    "preserveWatchOutput": true, // 保留 watch 输出  
+    "removeComments": false, // 移除注释  
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": [
+    "./src/**/*",
+    "./dist/**/*"
+  ], // 包含的目录或文件列表  
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+  ] // 排除的目录或文件列表  
+}
