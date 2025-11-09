@@ -46,12 +46,12 @@ export const preloadAndCacheImages = (
  * ```typescript
  * // 示例：预加载并缓存图片
  * preloadAndCacheImage('https://example.com/image.jpg')
- *   .then((image) =\> {
+ *   .then((image) => {
  *     console.log('图片加载成功', image);
- *   \})
- *   .catch((error) =\> {
+ *   })
+ *   .catch((error) => {
  *     console.error('图片加载失败', error);
- *   \});
+ *   });
  * ```
  */
 export const preloadAndCacheImage = (

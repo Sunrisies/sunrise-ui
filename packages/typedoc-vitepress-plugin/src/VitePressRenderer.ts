@@ -102,6 +102,7 @@ export class VitePressRenderer {
       lines.push(fullDescription);
       lines.push("");
     }
+    console.log(reflection.kind, "------------------");
 
     // 处理不同类型的渲染
     if (
@@ -117,14 +118,10 @@ export class VitePressRenderer {
         case ReflectionKind.Interface:
           lines.push(...this.renderInterface(reflection));
           break;
-        case ReflectionKind.Function:
-          lines.push(...this.renderFunction(reflection));
-          break;
-        case ReflectionKind.Component:
-          lines.push(...this.renderComponent(reflection));
-          break;
+
         default:
-          lines.push(...this.renderDefault(reflection));
+          // 什么都不渲染
+          break;
       }
     }
 
@@ -173,15 +170,11 @@ export class VitePressRenderer {
     // 获取函数签名
     const signatures = this.getFunctionSignatures(reflection);
 
-    if (signatures.length === 0) {
-      return this.renderDefault(reflection);
-    }
-
     // 使用第一个签名作为主要签名
     const signature = signatures[0];
 
     // 函数签名
-    lines.push("## Signature");
+    lines.push("## 签名");
     lines.push("");
     lines.push("```typescript");
     lines.push(this.renderFunctionVariableSignature(reflection, signature));
@@ -190,67 +183,63 @@ export class VitePressRenderer {
 
     // 参数说明
     if (signature.parameters && signature.parameters.length > 0) {
-      lines.push("## Parameters");
+      lines.push("## 参数");
       lines.push("");
-      lines.push("| Parameter | Type | Description |");
+      lines.push("| 参数 | 类型 | 描述 |");
       lines.push("|-----------|------|-------------|");
 
       signature.parameters.forEach((param) => {
         const type = this.renderType(param.type);
-        const description = param.comment?.shortText || "";
+        const description = param.comment?.summary[0].text || "";
         lines.push(`| ${param.name} | \`${type}\` | ${description} |`);
       });
       lines.push("");
     }
-
     // 返回值说明
     if (signature.type) {
-      lines.push("## Returns");
+      lines.push("## 返回值");
       lines.push("");
       lines.push(`**Type**: \`${this.renderType(signature.type)}\``);
       lines.push("");
 
-      if (signature.comment?.returns) {
-        lines.push(signature.comment.returns);
+      if (signature.comment?.blockTags) {
+        lines.push(signature.comment.blockTags[0].content[0].text);
         lines.push("");
       }
     }
-
-    // 示例代码
-    const exampleComment = reflection.comment?.tags?.find(
-      (tag) => tag.tagName === "example"
+    //
+    this.addExample(reflection, lines);
+    return lines;
+  }
+  /**
+   * 添加案例
+   */
+  private addExample(
+    reflection: DeclarationReflection,
+    lines: string[]
+  ): string[] {
+    const exampleComment = reflection.comment?.blockTags?.filter(
+      (tag) => tag.tag === "@example"
     );
     if (exampleComment) {
-      lines.push("## Example");
-      lines.push("");
-      lines.push("```typescript");
-      lines.push(exampleComment.text.trim());
-      lines.push("```");
-      lines.push("");
-    } else if (
-      reflection.comment?.tags?.some((tag) => tag.tagName === "example")
-    ) {
       // 处理多行示例
-      const exampleTags = reflection.comment.tags.filter(
-        (tag) => tag.tagName === "example"
-      );
-      lines.push("## Example");
-      lines.push("");
-      exampleTags.forEach((tag) => {
-        lines.push("```typescript");
-        lines.push(tag.text.trim());
-        lines.push("```");
+      exampleComment.forEach((tag, index) => {
+        lines.push(`## 案例${index + 1}`);
+        lines.push("");
+        console.log(tag.content, "tag.content");
+        lines.push(tag.content[0].text.trim());
         lines.push("");
       });
     }
-
     return lines;
   }
 
   /**
    * 获取函数签名
    */
-  private getFunctionSignatures(reflection: DeclarationReflection): any[] {
+  private getFunctionSignatures(
+    reflection: DeclarationReflection
+  ): Models.SignatureReflection[] {
     // 从类型声明中获取签名
     if (
       reflection.type?.type === "reflection" &&
@@ -331,7 +320,6 @@ export class VitePressRenderer {
       reflection.children?.filter(
         (child) => child.kind === ReflectionKind.Property
       ) || [];
-
     if (properties.length > 0) {
       lines.push("## Properties");
       lines.push("");
@@ -340,7 +328,7 @@ export class VitePressRenderer {
 
       properties.forEach((prop) => {
         const type = this.renderType(prop.type);
-        const description = prop.comment?.shortText || "";
+        const description = prop.comment?.label || "";
         lines.push(`| ${prop.name} | \`${type}\` | ${description} |`);
       });
       lines.push("");
@@ -351,9 +339,8 @@ export class VitePressRenderer {
       reflection.children?.filter(
         (child) => child.kind === ReflectionKind.Method
       ) || [];
-
     if (methods.length > 0) {
-      lines.push("## Methods");
+      lines.push("## 方法");
       lines.push("");
 
       methods.forEach((method) => {
@@ -362,154 +349,40 @@ export class VitePressRenderer {
 
         if (method.signatures) {
           method.signatures.forEach((signature) => {
+            if (signature.comment?.summary) {
+              lines.push(`- ${signature.comment.summary[0].text}`);
+              lines.push("");
+            }
             lines.push("```typescript");
             lines.push(this.renderSignature(signature));
             lines.push("```");
             lines.push("");
-
-            if (signature.comment?.text) {
-              lines.push(signature.comment.text);
-              lines.push("");
-            }
           });
         }
       });
     }
-
-    return lines;
-  }
-
-  private renderComponent(reflection: DeclarationReflection): string[] {
-    const lines: string[] = [];
-
-    lines.push("## Props");
-    lines.push("");
-
-    const props =
-      reflection.children?.filter(
-        (child) => child.kind === ReflectionKind.Property
-      ) || [];
-
-    if (props.length > 0) {
-      lines.push("| Prop | Type | Default | Required | Description |");
-      lines.push("|------|------|---------|----------|-------------|");
-
-      props.forEach((prop) => {
-        const type = this.renderType(prop.type);
-        const description = prop.comment?.shortText || "";
-        const defaultValue =
-          prop.comment?.tags?.find((tag) => tag.tagName === "default")?.text ||
-          "-";
-        const required = prop.flags.isOptional ? "No" : "Yes";
-
-        lines.push(
-          `| ${prop.name} | \`${type}\` | ${defaultValue} | ${required} | ${description} |`
-        );
-      });
-      lines.push("");
-    }
-
-    // 示例用法
-    lines.push("## Usage");
-    lines.push("");
-    lines.push("```tsx");
-    lines.push(`import { ${reflection.name} } from 'your-library';`);
-    lines.push("");
-    lines.push(`function Example() {`);
-    lines.push(`  return <${reflection.name} />;`);
-    lines.push(`}`);
-    lines.push("```");
-    lines.push("");
-
-    return lines;
-  }
-
-  private renderFunction(reflection: DeclarationReflection): string[] {
-    const lines: string[] = [];
-
-    if (reflection.signatures) {
-      reflection.signatures.forEach((signature) => {
-        lines.push("## Signature");
-        lines.push("");
-        lines.push("```typescript");
-        lines.push(this.renderSignature(signature));
-        lines.push("```");
-        lines.push("");
-
-        // 参数表格
-        if (signature.parameters && signature.parameters.length > 0) {
-          lines.push("### Parameters");
-          lines.push("");
-          lines.push("| Parameter | Type | Description |");
-          lines.push("|-----------|------|-------------|");
-
-          signature.parameters.forEach((param) => {
-            const type = this.renderType(param.type);
-            const description = param.comment?.shortText || "";
-            lines.push(`| ${param.name} | \`${type}\` | ${description} |`);
-          });
-          lines.push("");
-        }
-
-        // 返回值
-        if (signature.type) {
-          lines.push("### Returns");
-          lines.push("");
-          lines.push(`Type: \`${this.renderType(signature.type)}\``);
-          lines.push("");
-
-          if (signature.comment?.returns) {
-            lines.push(signature.comment.returns);
-            lines.push("");
-          }
-        }
-      });
-    }
-
-    // 示例
-    lines.push("## Example");
-    lines.push("");
-    lines.push("```typescript");
-    lines.push(`import { ${reflection.name} } from 'your-library';`);
-    lines.push("");
-    lines.push(`// Usage example`);
-    lines.push(`const result = ${reflection.name}();`);
-    lines.push("```");
-    lines.push("");
-
+    this.addExample(reflection, lines);
     return lines;
   }
 
   private renderInterface(reflection: DeclarationReflection): string[] {
     const lines: string[] = [];
 
-    lines.push("## Properties");
+    lines.push("## 属性");
     lines.push("");
 
     if (reflection.children) {
-      lines.push("| Property | Type | Description |");
+      lines.push("| Property | 类型 | 描述 |");
       lines.push("|----------|------|-------------|");
 
       reflection.children.forEach((child) => {
         const type = this.renderType(child.type);
-        const description = child.comment?.shortText || "";
+        console.log(JSON.stringify(child), "child");
+        const description = child.comment?.summary[0].text || "";
         lines.push(`| ${child.name} | \`${type}\` | ${description} |`);
       });
       lines.push("");
     }
-
-    return lines;
-  }
-
-  private renderDefault(reflection: DeclarationReflection): string[] {
-    const lines: string[] = [];
-
-    lines.push("## Type Definition");
-    lines.push("");
-    lines.push("```typescript");
-    lines.push(this.renderTypeDefinition(reflection));
-    lines.push("```");
-    lines.push("");
 
     return lines;
   }
@@ -748,302 +621,5 @@ export class VitePressRenderer {
     }
 
     return link;
-  }
-
-  /**
-   * 生成侧边栏 Markdown 文件
-   */
-  private generateSidebarMarkdown(project: ProjectReflection): void {
-    if (!project.children) return;
-
-    const lines: string[] = [];
-
-    lines.push("- [API 概览](../api/)");
-    lines.push("");
-
-    // 按模块分组
-    const modules: Record<string, DeclarationReflection[]> = {};
-
-    for (const reflection of project.children) {
-      const module = this.getModule(reflection) || "Global";
-      if (!modules[module]) {
-        modules[module] = [];
-      }
-      modules[module].push(reflection);
-    }
-
-    // 按模块名称排序
-    const sortedModuleNames = Object.keys(modules).sort();
-
-    for (const moduleName of sortedModuleNames) {
-      const moduleReflections = modules[moduleName];
-      const moduleSlug = moduleName.toLowerCase().replace(/[^a-z0-9]/g, "-");
-
-      lines.push(`- **${moduleName}**`);
-      lines.push(`  - [模块概览](../api/modules/${moduleSlug})`);
-
-      // 按名称排序
-      moduleReflections.sort((a, b) => a.name.localeCompare(b.name));
-
-      moduleReflections.forEach((reflection) => {
-        const functionDescription = this.getFunctionDescription(reflection);
-        const displayText = functionDescription || reflection.name;
-        const link = `../api/${this.getFilename(reflection).replace(
-          ".md",
-          ""
-        )}`;
-
-        lines.push(`  - [${reflection.name}](${link})`);
-      });
-
-      lines.push("");
-    }
-
-    const sidebarDir = path.join(this.outputDir, "..", ".vitepress");
-    if (!fs.existsSync(sidebarDir)) {
-      fs.mkdirSync(sidebarDir, { recursive: true });
-    }
-
-    fs.writeFileSync(
-      path.join(sidebarDir, "sidebar-api.md"),
-      lines.join("\n"),
-      "utf8"
-    );
-  }
-
-  /**
-   * 生成导航文件
-   */
-  private generateNavFile(project: ProjectReflection): void {
-    const lines: string[] = [];
-
-    lines.push("---");
-    lines.push("title: API 参考");
-    lines.push("description: 完整的 API 文档");
-    lines.push("sidebar: false");
-    lines.push("---");
-    lines.push("");
-    lines.push("# API 参考");
-    lines.push("");
-    lines.push("欢迎使用 API 文档。此参考包含所有导出成员的详细信息。");
-    lines.push("");
-
-    if (project.children) {
-      // 按模块分组
-      const modules: Record<string, DeclarationReflection[]> = {};
-
-      for (const reflection of project.children) {
-        const module = this.getModule(reflection) || "Global";
-        if (!modules[module]) {
-          modules[module] = [];
-        }
-        modules[module].push(reflection);
-      }
-
-      // 按模块名称排序
-      const sortedModuleNames = Object.keys(modules).sort();
-
-      for (const moduleName of sortedModuleNames) {
-        const moduleReflections = modules[moduleName];
-
-        lines.push(`## ${moduleName}`);
-        lines.push("");
-        lines.push(`> ${this.getModuleDescription(moduleName)}`);
-        lines.push("");
-
-        // 按名称排序
-        moduleReflections.sort((a, b) => a.name.localeCompare(b.name));
-
-        lines.push("| 名称 | 描述 | 类型 |");
-        lines.push("|------|------|------|");
-
-        moduleReflections.forEach((reflection) => {
-          const functionDescription = this.getFunctionDescription(reflection);
-          const displayText =
-            functionDescription || this.getShortDescription(reflection);
-          const kind = ReflectionKind[reflection.kind];
-          const link = this.getFilename(reflection).replace(".md", "");
-          const kindBadge = this.getKindBadge(kind);
-
-          lines.push(
-            `| [${reflection.name}](${link}) | ${displayText} | ${kindBadge} |`
-          );
-        });
-        lines.push("");
-      }
-    }
-
-    fs.writeFileSync(
-      path.join(this.outputDir, "index.md"),
-      lines.join("\n"),
-      "utf8"
-    );
-  }
-  /**
-   * 为每个模块生成索引文件
-   */
-  private generateModuleIndexFiles(project: ProjectReflection): void {
-    if (!project.children) return;
-
-    // 按模块分组
-    const modules: Record<string, DeclarationReflection[]> = {};
-
-    for (const reflection of project.children) {
-      const module = this.getModule(reflection) || "Global";
-      if (!modules[module]) {
-        modules[module] = [];
-      }
-      modules[module].push(reflection);
-    }
-
-    // 为每个模块生成单独的索引文件
-    for (const [moduleName, reflections] of Object.entries(modules)) {
-      this.generateSingleModuleIndex(moduleName, reflections);
-    }
-  }
-
-  /**
-   * 生成单个模块的索引文件
-   */
-  private generateSingleModuleIndex(
-    moduleName: string,
-    reflections: DeclarationReflection[]
-  ): void {
-    const lines: string[] = [];
-
-    const moduleDir = path.join(this.outputDir, "modules");
-    if (!fs.existsSync(moduleDir)) {
-      fs.mkdirSync(moduleDir, { recursive: true });
-    }
-
-    const moduleSlug = moduleName.toLowerCase().replace(/[^a-z0-9]/g, "-");
-
-    lines.push("---");
-    lines.push(`title: "${moduleName} 模块"`);
-    lines.push(`description: "${this.getModuleDescription(moduleName)}"`);
-    lines.push("---");
-    lines.push("");
-    lines.push(`# ${moduleName} 模块`);
-    lines.push("");
-    lines.push(this.getModuleDescription(moduleName));
-    lines.push("");
-
-    // 按类型分组
-    const groups = this.groupByKind(reflections);
-
-    for (const [kind, kindReflections] of Object.entries(groups)) {
-      if (kindReflections.length > 0) {
-        lines.push(`## ${this.getKindDisplayName(kind)}`);
-        lines.push("");
-
-        kindReflections.sort((a, b) => a.name.localeCompare(b.name));
-
-        lines.push("| 名称 | 描述 |");
-        lines.push("|------|------|");
-
-        kindReflections.forEach((reflection) => {
-          const functionDescription = this.getFunctionDescription(reflection);
-          const displayText =
-            functionDescription || this.getShortDescription(reflection);
-          const link = `../${this.getFilename(reflection).replace(".md", "")}`;
-
-          lines.push(`| [${reflection.name}](${link}) | ${displayText} |`);
-        });
-        lines.push("");
-      }
-    }
-
-    fs.writeFileSync(
-      path.join(moduleDir, `${moduleSlug}.md`),
-      lines.join("\n"),
-      "utf8"
-    );
-  }
-
-  /**
-   * 获取模块描述
-   */
-  private getModuleDescription(moduleName: string): string {
-    const moduleDescriptions: Record<string, string> = {
-      "browser/http": "浏览器 HTTP 请求工具集，提供文件下载和 HTTP 客户端功能",
-      browser: "浏览器相关工具函数",
-      common: "通用工具函数和工具类",
-      utils: "工具函数集合",
-      Global: "全局函数和工具",
-    };
-
-    return (
-      moduleDescriptions[moduleName] ||
-      `${moduleName} 模块包含相关的 API 函数和类`
-    );
-  }
-
-  /**
-   * 获取简短的描述
-   */
-  private getShortDescription(reflection: DeclarationReflection): string {
-    if (reflection.comment?.shortText) {
-      return reflection.comment.shortText;
-    }
-
-    if (reflection.signatures?.[0]?.comment?.shortText) {
-      return reflection.signatures[0].comment.shortText;
-    }
-
-    if (
-      reflection.type?.type === "reflection" &&
-      reflection.type.declaration?.signatures?.[0]?.comment?.shortText
-    ) {
-      return reflection.type.declaration.signatures[0].comment.shortText;
-    }
-
-    return "暂无描述";
-  }
-
-  /**
-   * 获取类型徽章
-   */
-  private getKindBadge(kind: string): string {
-    const badgeColors: Record<string, string> = {
-      Class: "blue",
-      Interface: "green",
-      Function: "purple",
-      Variable: "yellow",
-      TypeAlias: "gray",
-      Enum: "orange",
-    };
-
-    const color = badgeColors[kind] || "gray";
-    return `<Badge type="tip" text="${kind}" color="${color}" />`;
-  }
-
-  private groupByKind(
-    reflections: DeclarationReflection[]
-  ): Record<string, DeclarationReflection[]> {
-    const groups: Record<string, DeclarationReflection[]> = {};
-
-    for (const reflection of reflections) {
-      const kind = ReflectionKind[reflection.kind];
-      if (!groups[kind]) {
-        groups[kind] = [];
-      }
-      groups[kind].push(reflection);
-    }
-
-    return groups;
-  }
-
-  private getKindDisplayName(kind: string): string {
-    const displayNames: Record<string, string> = {
-      Class: "Classes",
-      Interface: "Interfaces",
-      Function: "Functions",
-      Component: "Components",
-      TypeAlias: "Type Aliases",
-      Variable: "Variables",
-      Enum: "Enums",
-    };
-
-    return displayNames[kind] || `${kind}s`;
   }
 }

@@ -7,7 +7,7 @@
  * @memberof module:browser/dom
  *
  * @func 获取指定元素ID的内容区域
- *
+ * @returns {width: number; height: number} | Error
  * @example
  * ```typescript
  * // 获取ID为 'myElement' 的元素的内容区域尺寸
@@ -17,6 +17,15 @@
  * } else {
  *   console.log('内容区域宽度:', dimensions.width)
  *   console.log('内容区域高度:', dimensions.height)
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // 获取ID为 'myElement11111' 的元素的内容区域尺寸
+ * const dimensions = getContentDimensions('myElement')
+ * if (dimensions instanceof Error) {
+ *   console.error('无法获取元素的尺寸')
  * }
  * ```
  */
