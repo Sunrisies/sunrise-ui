@@ -1,4 +1,3 @@
-// src/VitePressRenderer.ts
 import {
   DeclarationReflection,
   ProjectReflection,

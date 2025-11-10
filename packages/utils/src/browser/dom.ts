@@ -19,15 +19,6 @@
  *   console.log('内容区域高度:', dimensions.height)
  * }
  * ```
- *
- * @example
- * ```typescript
- * // 获取ID为 'myElement11111' 的元素的内容区域尺寸
- * const dimensions = getContentDimensions('myElement')
- * if (dimensions instanceof Error) {
- *   console.error('无法获取元素的尺寸')
- * }
- * ```
  */
 export const getContentDimensions = (
   elementId: string
