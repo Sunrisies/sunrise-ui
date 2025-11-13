@@ -1,20 +1,58 @@
-import React from "react"
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 
-interface ButtonProps {
-  onClick?: () => void
-  children?: React.ReactNode
-  className?: string
-  type?: "button" | "submit" | "reset"
+// 简单的cn函数实现，用于合并类名
+function cn(...inputs: (string | undefined | null | boolean)[]) {
+  return inputs.filter(Boolean).join(" ")
 }
 
-export const Button: React.FC<ButtonProps> = ({ onClick, children, className, type = "button" }) => {
-  return (
-    <button
-      className={`bg-blue-500 !text-red-400 border-2 border-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded ${className || ""}`}
-      type={type}
-      onClick={onClick}
-    >
-      {children || "Button"}
-    </button>
-  )
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default:
+          "bg-blue-500 text-white shadow hover:bg-blue-600",
+        destructive:
+          "bg-red-500 text-white shadow-sm hover:bg-red-600",
+        outline:
+          "border border-gray-300 bg-white shadow-sm hover:bg-gray-50",
+        secondary:
+          "bg-gray-100 text-gray-900 shadow-sm hover:bg-gray-200",
+        ghost: "hover:bg-gray-100",
+        link: "text-blue-500 underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-9 px-4 py-2",
+        sm: "h-8 rounded-md px-3 text-xs",
+        lg: "h-10 rounded-md px-8",
+        icon: "h-9 w-9",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  VariantProps<typeof buttonVariants> {
+  // 移除asChild属性，简化实现
 }
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, ...props }, ref) => {
+    return (
+      <button
+        className={ cn(buttonVariants({ variant, size, className })) }
+        ref={ ref }
+        { ...props }
+      />
+    )
+  }
+)
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
