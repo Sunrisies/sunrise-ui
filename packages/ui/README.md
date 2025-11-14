@@ -74,7 +74,7 @@ function Demo() {
 
 | 属性 | 说明 | 类型 | 默认值 |
 |------|------|------|--------|
-| variant | 按钮类型 | `'default' \| 'destructive' \| 'outline' \| 'secondary' \| 'ghost' \| 'link'` | `'default'` |
+| variant | 按钮类型 | `'default' \| 'destructive' \| 'outline-solid' \| 'secondary' \| 'ghost' \| 'link'` | `'default'` |
 | size | 按钮尺寸 | `'sm' \| 'default' \| 'lg' \| 'icon'` | `'default'` |
 | disabled | 是否禁用 | `boolean` | `false` |
 | className | 自定义类名 | `string` | - |

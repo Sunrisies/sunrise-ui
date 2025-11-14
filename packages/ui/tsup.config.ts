@@ -23,7 +23,7 @@ export default defineConfig(async () => {
   const entries = await getEntries();
   console.log(entries);
   return {
-    entry: ["src/index.ts"],
+    entry: entries,
     dts: true,
     format: ["esm"],
     outDir: "dist",

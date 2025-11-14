@@ -84,7 +84,7 @@ export const Input: InputComponent = ({
       onKeyDown={handleKeyDown}
       disabled={disabled}
       maxLength={maxLength}
-      className={`border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${getSizeClass()} ${disabled ? "bg-gray-100 cursor-not-allowed" : ""} ${className || ""}`}
+      className={`border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 ${getSizeClass()} ${disabled ? "bg-gray-100 cursor-not-allowed" : ""} ${className || ""}`}
     />
   );
 
@@ -94,7 +94,7 @@ export const Input: InputComponent = ({
         <button
           type="button"
           onClick={togglePasswordVisibility}
-          className="ml-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+          className="ml-2 text-gray-500 hover:text-gray-700 focus:outline-hidden"
         >
           {isPasswordVisible ? "Hide" : "Show"}
         </button>
@@ -116,7 +116,7 @@ export const Input: InputComponent = ({
             onKeyDown={handleKeyDown}
             disabled={disabled}
             maxLength={maxLength}
-            className="flex-1 focus:outline-none"
+            className="flex-1 focus:outline-hidden"
           />
           {renderSuffix()}
         </div>
@@ -198,7 +198,7 @@ export const TextArea: React.FC<InputProps> = ({
         onChange={handleInputChange}
         disabled={disabled}
         maxLength={maxLength}
-        className={`border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${getSizeClass()} ${disabled ? "bg-gray-100 cursor-not-allowed" : ""} w-full`}
+        className={`border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 ${getSizeClass()} ${disabled ? "bg-gray-100 cursor-not-allowed" : ""} w-full`}
         style={{ ...getAutoSizeStyle(), resize: autoSize ? "none" : "vertical" }}
       />
       {showCount && (
@@ -242,7 +242,7 @@ export const Search: React.FC<SearchProps> = ({
         <button
           onClick={handleSearch}
           disabled={loading}
-          className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300"
+          className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-hidden focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300"
         >
           {loading ? "..." : "Search"}
         </button>
@@ -254,7 +254,7 @@ export const Search: React.FC<SearchProps> = ({
         <button
           onClick={handleSearch}
           disabled={loading}
-          className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300"
+          className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-hidden focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300"
         >
           {loading ? "..." : enterButton}
         </button>
