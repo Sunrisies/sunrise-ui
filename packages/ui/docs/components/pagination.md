@@ -14,7 +14,7 @@ import {
   PaginationNext,
   PaginationEllipsis,
   CustomPagination,
-} from "sunrise/ui/Pagination";
+} from "sunrise-ui-plus/Pagination";
 ```
 
 ## 示例
@@ -24,7 +24,7 @@ import {
 ::: demo 使用 `CustomPagination` 组件快速创建一个完整的分页。
 
 ```tsx
-import { CustomPagination } from "sunrise/ui/Pagination";
+import { CustomPagination } from "sunrise-ui-plus/Pagination";
 import { useState } from "react";
 
 function Demo() {
@@ -56,7 +56,7 @@ import {
   PaginationPrevious,
   PaginationNext,
   PaginationEllipsis,
-} from "sunrise/ui/Pagination";
+} from "sunrise-ui-plus/Pagination";
 import { useState } from "react";
 
 function Demo() {

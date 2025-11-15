@@ -7,7 +7,7 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "sunrise/ui"
+} from "sunrise-ui-plus"
 
 const invoices = [
     {

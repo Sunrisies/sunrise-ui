@@ -1,5 +1,5 @@
 import './App.css'
-import { Button, Card } from 'sunrise/ui'
+import { Button, Card } from 'sunrise-ui-plus'
 import { genRandStr } from "sunrise-utils"
 import { TableDemo } from './components/table'
 import { Pagination } from './components/customPagination'

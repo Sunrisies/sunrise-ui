@@ -1,5 +1,5 @@
 import React from 'react'
-import { CustomPagination } from 'sunrise/ui'
+import { CustomPagination } from 'sunrise-ui-plus'
 // 使用完整组件
 export function Pagination() {
     const [currentPage, setCurrentPage] = React.useState(1)

@@ -9,11 +9,13 @@
         "test": "pnpm run --recursive test",
         "docs:dev": "pnpm --filter sunrise-ui-docs dev",
         "docs:build": "pnpm --filter sunrise-ui-docs build",
-        "docs:preview": "pnpm --filter sunrise-ui-docs preview"
+        "docs:preview": "pnpm --filter sunrise-ui-docs preview",
+        "publish": "node publish.js"
     },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^6.0.0",
         "@typescript-eslint/parser": "^6.0.0",
+        "cross-spawn": "^7.0.3",
         "eslint": "^8.45.0",
         "eslint-plugin-react-hooks": "^4.6.0",
         "eslint-plugin-react-refresh": "^0.4.3",

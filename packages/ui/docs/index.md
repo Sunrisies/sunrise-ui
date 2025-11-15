@@ -1,4 +1,3 @@
-
 # Sunrise UI
 
 一个基于 React 19 的轻量级组件库，提供 `Button`、`Card`、`Input`（含 `TextArea`、`Search`、`Password`）等基础组件。
@@ -13,13 +12,13 @@
 
 ## 安装
 
-```bash
-npm install sunrise/ui
+````bash
+npm install sunrise-ui-plus
 # 或
-pnpm add sunrise/ui
-# 或
-yarn add sunrise/ui
-```
+pnpm add sunrise-ui-plus
+# 或sunrise-ui-plus
+yarn add sunrise-ui-plus
+```sunrise-ui-plus
 
 ## 快速开始
 
@@ -28,16 +27,16 @@ yarn add sunrise/ui
 在应用入口文件中引入组件库样式：
 
 ```tsx
-import 'sunrise/ui/styles.css'
-```
+import "sunrise-ui-plus/styles.css";
+````
 
 ### 2. 使用组件
 
 ```tsx
-import { Button } from 'sunrise/ui/Button'
+import { Button } from "sunrise-ui-plus/Button";
 
 function App() {
-  return <Button variant="primary">点击我</Button>
+  return <Button variant="primary">点击我</Button>;
 }
 ```
 
@@ -48,10 +47,10 @@ function App() {
 
 ## 开发与构建
 
-- 开发监听：`pnpm --filter sunrise/ui dev`
-- 构建产物：`pnpm --filter sunrise/ui build`（输出到 `dist/`，包含 `index.mjs` 与 `styles.css`）
-- 代码检查：`pnpm --filter sunrise/ui lint`
-- 清理：`pnpm --filter sunrise/ui clean`
+- 开发监听：`pnpm --filter sunrise-ui-plus dev`
+- 构建产物：`pnpm --filter sunrise-ui-plus build`（输出到 `dist/`，包含 `index.mjs` 与 `styles.css`）
+- 代码检查：`pnpm --filter sunrise-ui-plus lint`
+- 清理：`pnpm --filter sunrise-ui-plus clean`
 
 ## 组件列表
 

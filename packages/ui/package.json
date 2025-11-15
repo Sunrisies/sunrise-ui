@@ -1,6 +1,30 @@
 {
-    "name": "sunrise/ui",
-    "version": "1.0.0",
+    "name": "sunrise-ui-plus",
+    "version": "0.0.2",
+    "description": "一个基于React和Tailwind CSS的现代UI组件库",
+    "keywords": [
+        "react",
+        "ui",
+        "components",
+        "tailwindcss",
+        "design-system",
+        "frontend",
+        "typescript"
+    ],
+    "author": "朝阳",
+    "license": "MIT",
+    "homepage": "https://github.com/Sunrisies/sunrise-ui#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Sunrisies/sunrise-ui.git"
+    },
+    "bugs": {
+        "url": "https://github.com/Sunrisies/sunrise-ui/issues"
+    },
+    "files": [
+        "dist",
+        "README.md"
+    ],
     "main": "dist/index.mjs",
     "types": "dist/index.d.mts",
     "modules": "dist/index.mjs",
@@ -10,33 +34,26 @@
             "default": "./dist/index.mjs"
         },
         "./styles.css": "./dist/styles.css",
-        "./Button": {
-            "types": "./dist/Button.d.mts",
-            "default": "./dist/Button.mjs"
-        },
-        "./Card": {
-            "types": "./dist/Card.d.mts",
-            "default": "./dist/Card.mjs"
-        },
-        "./Input": {
-            "types": "./dist/Input.d.mts",
-            "default": "./dist/Input.mjs"
-        },
-        "./Table": {
-            "types": "./dist/Table.d.mts",
-            "default": "./dist/Table.mjs"
+        "./*": {
+            "types": "./dist/*.d.mts",
+            "default": "./dist/*.mjs"
         }
     },
     "scripts": {
         "dev": "tsup --watch",
         "build": "pnpm run clean && tsup && pnpm run build:css",
-        "build:css": "tailwindcss -i ./src/styles/tailwind.css -o ./dist/styles.css",
+        "build:css": "tailwindcss -i ./src/styles/tailwind.css -o ./dist/styles.css --minify",
         "clean": "rimraf dist",
         "lint": "eslint src --ext .ts,.tsx",
+        "lint:fix": "eslint src --ext .ts,.tsx --fix",
+        "type-check": "tsc --noEmit",
         "clear": " rimraf node_modules dist",
         "docs:dev": "vitepress dev docs",
         "docs:build": "vitepress build docs",
-        "docs:preview": "vitepress preview docs"
+        "docs:preview": "vitepress preview docs",
+        "prepublishOnly": "pnpm run build",
+        "publish": "node publish.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
     },
     "devDependencies": {
         "@tailwindcss/cli": "^4.1.17",

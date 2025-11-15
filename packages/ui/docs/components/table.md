@@ -5,13 +5,31 @@
 ## 按需引入
 
 ```tsx
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableFooter, TableCaption } from 'sunrise/ui/Table'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,sunrise-ui-plus
+  TableFooter,
+  TableCaption,
+} from "sunrise-ui-plus/Table";
 ```
 
 ## 示例
 
 ```tsx
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableFooter, TableCaption } from 'sunrise/ui/Table'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableFooter,
+  TableCaption,
+} from "sunrise/ui/Table";
 
 function Demo() {
   return (
@@ -42,7 +60,7 @@ function Demo() {
       </TableFooter>
       <TableCaption>示例数据</TableCaption>
     </Table>
-  )
+  );
 }
 ```
 

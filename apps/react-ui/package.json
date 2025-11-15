@@ -15,7 +15,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "sunrise-utils": "workspace:*",
-    "sunrise/ui": "workspace:*"
+    "sunrise-ui-plus": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
