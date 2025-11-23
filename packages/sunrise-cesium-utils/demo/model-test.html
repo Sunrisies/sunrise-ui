@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>模型管理测试 - Cesium 工具库</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="cesium/Cesium.js"></script>
+    <link href="cesium/widgets.min.css" rel="stylesheet" />
+    <script src="../dist/index.global.js"></script>
+    <script src="js/utils.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>模型管理测试</h1>
+        <p>测试模型位置计算、查找、可见性控制等模型管理功能</p>
+        <a href="index.html" class="back-btn">← 返回主页面</a>
+      </header>
+
+      <div class="content">
+        <div id="cesiumContainer"></div>
+
+        <div class="control-panel">
+          <div class="section">
+            <h2 class="section-title">模型管理测试</h2>
+
+            <div class="input-group">
+              <label>计算位置矩阵</label>
+              <div class="coordinates">
+                <input
+                  type="number"
+                  id="modelLon"
+                  placeholder="经度"
+                  value="116.3974"
+                  step="0.0001"
+                />
+                <input
+                  type="number"
+                  id="modelLat"
+                  placeholder="纬度"
+                  value="39.9093"
+                  step="0.0001"
+                />
+              </div>
+              <input
+                type="number"
+                id="modelHeading"
+                placeholder="方位角(度)"
+                value="0"
+                step="1"
+              />
+              <button id="calculateMatrixBtn">计算位置矩阵</button>
+              <div class="result" id="matrixResult"></div>
+            </div>
+
+            <div class="input-group">
+              <label>模型操作</label>
+              <div class="button-group">
+                <button id="addModelBtn">添加测试模型</button>
+                <button id="findModelBtn">查找模型</button>
+                <button id="toggleModelBtn">切换可见性</button>
+                <button id="removeModelBtn">移除模型</button>
+              </div>
+              <div class="result" id="modelResult"></div>
+            </div>
+
+            <div class="input-group">
+              <label>查找所有模型</label>
+              <button id="findAllModelsBtn">查找所有模型</button>
+              <div class="result" id="allModelsResult"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="status" id="status">就绪</div>
+    </div>
+
+    <script>
+      const { ModelUtils } = SunriseCesiumUtils;
+      console.log("Cesium version:", ModelUtils);
+      Cesium.Ion.defaultAccessToken =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIyYmY4NjhkYy1kZThlLTQyOWMtOGYzNi04Yzk5Nzc1NDAxOTQiLCJpZCI6MzMyNDkzLCJpYXQiOjE3NTUzMzIwODZ9.myLWfCJ3Xijjw-bFY3mpV7hOHktDmvr6_AttNXN_pEY";
+
+      // 初始化查看器
+      const viewer = new Cesium.Viewer("cesiumContainer", {
+        timeline: false,
+        animation: false,
+        baseLayerPicker: false,
+        geocoder: false,
+        homeButton: false,
+        sceneModePicker: false,
+        navigationHelpButton: false,
+        fullscreenButton: false,
+      });
+
+      // 设置初始视角
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(116.3974, 39.9093, 1500),
+        orientation: {
+          heading: 0,
+          pitch: -Math.PI / 4,
+          roll: 0,
+        },
+      });
+
+      // 存储测试模型
+      let testModel = null;
+      let modelVisible = true;
+
+      // 更新状态信息
+      function updateStatus(message) {
+        const statusEl = document.getElementById("status");
+        statusEl.textContent = message;
+
+        // 3秒后清除状态
+        setTimeout(() => {
+          if (statusEl.textContent === message) {
+            statusEl.textContent = "就绪";
+          }
+        }, 3000);
+      }
+
+      // 计算位置矩阵测试
+      document
+        .getElementById("calculateMatrixBtn")
+        .addEventListener("click", async () => {
+          const lon = parseFloat(document.getElementById("modelLon").value);
+          const lat = parseFloat(document.getElementById("modelLat").value);
+          const heading = parseFloat(
+            document.getElementById("modelHeading").value
+          );
+
+          if (isNaN(lon) || isNaN(lat)) {
+            updateStatus("请输入有效的经纬度");
+            return;
+          }
+
+          try {
+            const matrix = await ModelUtils.calculateLocationMatrix({
+              longitude: lon,
+              latitude: lat,
+              heading: isNaN(heading) ? 0 : heading,
+              terrainProvider: viewer.terrainProvider,
+            });
+
+            document.getElementById(
+              "matrixResult"
+            ).textContent = `位置矩阵计算成功 (方位角: ${
+              isNaN(heading) ? 0 : heading
+            }度)`;
+
+            updateStatus(
+              `位置矩阵计算成功 (方位角: ${isNaN(heading) ? 0 : heading}度)`
+            );
+
+            // 如果存在测试模型，应用矩阵
+            if (testModel) {
+              testModel.modelMatrix = matrix;
+              updateStatus("已更新模型位置和方向");
+            }
+          } catch (error) {
+            document.getElementById(
+              "matrixResult"
+            ).textContent = `计算失败: ${error.message}`;
+            updateStatus(`计算失败: ${error.message}`);
+          }
+        });
+
+      // 添加测试模型
+      document
+        .getElementById("addModelBtn")
+        .addEventListener("click", async () => {
+          if (testModel) {
+            document.getElementById("modelResult").textContent =
+              "测试模型已存在";
+            updateStatus("测试模型已存在");
+            return;
+          }
+
+          try {
+            const position = Cesium.Cartesian3.fromDegrees(
+              116.3974,
+              39.9093,
+              50
+            );
+            const hpr = new Cesium.HeadingPitchRoll(0, 0, 0);
+            const matrix = Cesium.Transforms.headingPitchRollToFixedFrame(
+              position,
+              hpr
+            );
+
+            testModel = viewer.scene.primitives.add(
+              Cesium.Model.fromGltf({
+                url: Cesium.IonResource.fromAssetId(1415196),
+                modelMatrix: matrix,
+                scale: 50,
+                id: "test-aircraft",
+              })
+            );
+
+            document.getElementById("modelResult").textContent =
+              "测试模型添加成功";
+            updateStatus("测试模型添加成功");
+          } catch (error) {
+            document.getElementById(
+              "modelResult"
+            ).textContent = `添加模型失败: ${error.message}`;
+            updateStatus(`添加模型失败: ${error.message}`);
+          }
+        });
+
+      // 查找模型测试
+      document.getElementById("findModelBtn").addEventListener("click", () => {
+        const foundModel = ModelUtils.findById({
+          viewer: viewer,
+          id: "test-aircraft",
+        });
+
+        if (foundModel) {
+          document.getElementById("modelResult").textContent = "找到测试模型";
+          updateStatus("找到测试模型");
+        } else {
+          document.getElementById("modelResult").textContent = "未找到测试模型";
+          updateStatus("未找到测试模型");
+        }
+      });
+
+      // 切换模型可见性测试
+      document
+        .getElementById("toggleModelBtn")
+        .addEventListener("click", () => {
+          if (!testModel) {
+            document.getElementById("modelResult").textContent =
+              "请先添加测试模型";
+            updateStatus("请先添加测试模型");
+            return;
+          }
+
+          modelVisible = !modelVisible;
+          ModelUtils.setVisibility(testModel, modelVisible);
+
+          document.getElementById("modelResult").textContent = `模型可见性: ${
+            modelVisible ? "显示" : "隐藏"
+          }`;
+          updateStatus(`模型可见性: ${modelVisible ? "显示" : "隐藏"}`);
+        });
+
+      // 移除模型测试
+      document
+        .getElementById("removeModelBtn")
+        .addEventListener("click", () => {
+          if (!testModel) {
+            document.getElementById("modelResult").textContent =
+              "没有可移除的模型";
+            updateStatus("没有可移除的模型");
+            return;
+          }
+
+          viewer.scene.primitives.remove(testModel);
+          testModel = null;
+
+          document.getElementById("modelResult").textContent = "测试模型已移除";
+          updateStatus("测试模型已移除");
+        });
+
+      // 查找所有模型测试
+      document
+        .getElementById("findAllModelsBtn")
+        .addEventListener("click", () => {
+          const allModels = ModelUtils.findAllModels(viewer);
+
+          document.getElementById(
+            "allModelsResult"
+          ).textContent = `场景中共有 ${allModels.length} 个模型`;
+          updateStatus(`场景中共有 ${allModels.length} 个模型`);
+        });
+
+      // 初始化完成
+      updateStatus("模型管理测试页面已就绪");
+    </script>
+  </body>
+</html>
