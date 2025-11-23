@@ -7,12 +7,18 @@
  *
  * 提供 Cesium 相关的实用工具函数，包括：
  * - 相机控制
+ * - 坐标转换
+ * - 屏幕坐标转换
  */
 
 import CameraUtils from "./camera";
+import CoordinateUtils from "./coordinate";
+import ScreenUtils from "./screen";
 
 // 导出所有工具类
 export { CameraUtils } from "./camera";
+export { CoordinateUtils } from "./coordinate";
+export { ScreenUtils } from "./screen";
 
 // 导出类型
 export type {
@@ -25,4 +31,6 @@ export type {
 // 默认导出所有工具
 export default {
   CameraUtils,
+  CoordinateUtils,
+  ScreenUtils,
 };
