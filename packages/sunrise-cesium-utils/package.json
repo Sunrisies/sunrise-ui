@@ -2,8 +2,8 @@
     "name": "sunrise-cesium-utils",
     "version": "1.0.0",
     "description": "Cesium utility library for Sunrise UI",
-    "main": "dist/index.js",
-    "module": "dist/index.esm.js",
+    "main": "dist/index.global.js",
+    "module": "dist/index.mjs",
     "types": "dist/index.d.ts",
     "files": [
         "dist",
@@ -25,7 +25,7 @@
     "author": "Sunrise UI Team",
     "license": "MIT",
     "peerDependencies": {
-        "cesium": "^1.0.0"
+        "cesium": "1.135.0"
     },
     "devDependencies": {
         "typescript": "5.9.3",
