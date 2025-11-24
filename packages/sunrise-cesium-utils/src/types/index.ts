@@ -1,6 +1,29 @@
 import type { Cartesian3, Rectangle, TerrainProvider, Viewer } from "cesium";
 
 /**
+ * 缓存配置接口
+ * @public
+ * @author 朝阳
+ * @version 1.0.0
+ */
+export interface CacheConfig {
+  /** 数据库名称 */
+  dbName?: string
+  /** 生成缓存键的回调函数 */
+  key?: (
+    url: string,
+    responseType: string,
+    method: 'GET' | 'POST',
+    data: object | undefined,
+    headers: object | undefined
+  ) => string
+  /** 需要缓存的响应类型 */
+  types?: Array<'arraybuffer' | 'blob'>
+  /** 是否开启调试模式 */
+  debug: boolean
+}
+
+/**
  * 计算位置矩阵参数类型
  * @public
  * @author 朝阳

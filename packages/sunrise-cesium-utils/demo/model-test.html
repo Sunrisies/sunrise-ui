@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="css/style.css" />
     <script src="cesium/Cesium.js"></script>
     <link href="cesium/widgets.min.css" rel="stylesheet" />
-    <script src="../dist/index.global.js"></script>
+    <script src="../dist/index.min.js"></script>
     <script src="js/utils.js"></script>
   </head>
   <body>
@@ -53,23 +53,6 @@
               <button id="calculateMatrixBtn">计算位置矩阵</button>
               <div class="result" id="matrixResult"></div>
             </div>
-
-            <div class="input-group">
-              <label>模型操作</label>
-              <div class="button-group">
-                <button id="addModelBtn">添加测试模型</button>
-                <button id="findModelBtn">查找模型</button>
-                <button id="toggleModelBtn">切换可见性</button>
-                <button id="removeModelBtn">移除模型</button>
-              </div>
-              <div class="result" id="modelResult"></div>
-            </div>
-
-            <div class="input-group">
-              <label>查找所有模型</label>
-              <button id="findAllModelsBtn">查找所有模型</button>
-              <div class="result" id="allModelsResult"></div>
-            </div>
           </div>
         </div>
       </div>
@@ -79,7 +62,6 @@
 
     <script>
       const { ModelUtils } = SunriseCesiumUtils;
-      console.log("Cesium version:", ModelUtils);
       Cesium.Ion.defaultAccessToken =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIyYmY4NjhkYy1kZThlLTQyOWMtOGYzNi04Yzk5Nzc1NDAxOTQiLCJpZCI6MzMyNDkzLCJpYXQiOjE3NTUzMzIwODZ9.myLWfCJ3Xijjw-bFY3mpV7hOHktDmvr6_AttNXN_pEY";
 
@@ -211,42 +193,6 @@
           }
         });
 
-      // 查找模型测试
-      document.getElementById("findModelBtn").addEventListener("click", () => {
-        const foundModel = ModelUtils.findById({
-          viewer: viewer,
-          id: "test-aircraft",
-        });
-
-        if (foundModel) {
-          document.getElementById("modelResult").textContent = "找到测试模型";
-          updateStatus("找到测试模型");
-        } else {
-          document.getElementById("modelResult").textContent = "未找到测试模型";
-          updateStatus("未找到测试模型");
-        }
-      });
-
-      // 切换模型可见性测试
-      document
-        .getElementById("toggleModelBtn")
-        .addEventListener("click", () => {
-          if (!testModel) {
-            document.getElementById("modelResult").textContent =
-              "请先添加测试模型";
-            updateStatus("请先添加测试模型");
-            return;
-          }
-
-          modelVisible = !modelVisible;
-          ModelUtils.setVisibility(testModel, modelVisible);
-
-          document.getElementById("modelResult").textContent = `模型可见性: ${
-            modelVisible ? "显示" : "隐藏"
-          }`;
-          updateStatus(`模型可见性: ${modelVisible ? "显示" : "隐藏"}`);
-        });
-
       // 移除模型测试
       document
         .getElementById("removeModelBtn")
@@ -263,18 +209,6 @@
 
           document.getElementById("modelResult").textContent = "测试模型已移除";
           updateStatus("测试模型已移除");
-        });
-
-      // 查找所有模型测试
-      document
-        .getElementById("findAllModelsBtn")
-        .addEventListener("click", () => {
-          const allModels = ModelUtils.findAllModels(viewer);
-
-          document.getElementById(
-            "allModelsResult"
-          ).textContent = `场景中共有 ${allModels.length} 个模型`;
-          updateStatus(`场景中共有 ${allModels.length} 个模型`);
         });
 
       // 初始化完成
