@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cesium 缓存工具测试</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="cesium/Cesium.js"></script>
+    <link href="cesium/widgets.min.css" rel="stylesheet" />
+    <script src="../dist/index.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Cesium 缓存工具测试</h1>
+        <p>测试 Cesium 资源缓存功能，提高资源加载速度</p>
+        <a href="index.html" class="back-btn">返回主页</a>
+      </header>
+
+      <div class="content">
+        <div id="cesiumContainer"></div>
+        <div class="control-panel">
+          <div class="section">
+            <h2 class="section-title">缓存配置</h2>
+            <div class="input-group">
+              <label for="debugMode">调试模式</label>
+              <select id="debugMode">
+                <option value="false">关闭</option>
+                <option value="true">开启</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="cacheTypes">缓存类型</label>
+              <div class="checkbox-group">
+                <label
+                  ><input type="checkbox" id="blobType" checked /> Blob</label
+                >
+                <label
+                  ><input type="checkbox" id="arraybufferType" checked />
+                  ArrayBuffer</label
+                >
+              </div>
+            </div>
+            <div class="button-group">
+              <button id="applyConfig">应用配置</button>
+              <button id="resetConfig">重置配置</button>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2 class="section-title">缓存操作</h2>
+            <div class="button-group">
+              <button id="getCacheSize">获取缓存大小</button>
+              <button id="clearCache">清除缓存</button>
+            </div>
+            <div class="result" id="cacheResult">
+              点击"获取缓存大小"查看当前缓存占用
+            </div>
+          </div>
+
+          <div class="section">
+            <h2 class="section-title">测试场景</h2>
+            <div class="input-group">
+              <label>加载瓦片图层（首次加载会较慢，后续加载会使用缓存）</label>
+              <button id="loadTileLayer">加载瓦片图层</button>
+            </div>
+            <div class="input-group">
+              <label>加载模型（首次加载会较慢，后续加载会使用缓存）</label>
+              <button id="loadModel">加载3D模型</button>
+            </div>
+            <div class="result" id="loadResult">点击上方按钮测试资源加载</div>
+          </div>
+
+          <div class="section">
+            <h2 class="section-title">调试信息</h2>
+            <div class="result" id="debugInfo">调试信息将显示在此处</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="status">就绪</div>
+
+    <script>
+      const { useCesiumCache } = SunriseCesiumUtils;
+      // 初始化 Cesium
+      Cesium.Ion.defaultAccessToken =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIyYmY4NjhkYy1kZThlLTQyOWMtOGYzNi04Yzk5Nzc1NDAxOTQiLCJpZCI6MzMyNDkzLCJpYXQiOjE3NTUzMzIwODZ9.myLWfCJ3Xijjw-bFY3mpV7hOHktDmvr6_AttNXN_pEY";
+
+      const viewer = new Cesium.Viewer("cesiumContainer", {
+        timeline: false,
+        animation: false,
+        baseLayerPicker: false,
+        geocoder: false,
+        homeButton: false,
+        sceneModePicker: false,
+        navigationHelpButton: false,
+        fullscreenButton: false,
+      });
+
+      // 设置初始视角
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(116.3915, 39.9093, 1000),
+      });
+
+      // 初始化缓存
+      let cesiumCache = null;
+
+      // DOM 元素
+      const debugMode = document.getElementById("debugMode");
+      const blobType = document.getElementById("blobType");
+      const arraybufferType = document.getElementById("arraybufferType");
+      const applyConfig = document.getElementById("applyConfig");
+      const resetConfig = document.getElementById("resetConfig");
+      const getCacheSize = document.getElementById("getCacheSize");
+      const clearCache = document.getElementById("clearCache");
+      const loadTileLayer = document.getElementById("loadTileLayer");
+      const loadModel = document.getElementById("loadModel");
+      const cacheResult = document.getElementById("cacheResult");
+      const loadResult = document.getElementById("loadResult");
+      const debugInfo = document.getElementById("debugInfo");
+      const status = document.getElementById("status");
+
+      // 保存原始的 console.log
+      const originalLog = console.log;
+
+      // 应用缓存配置
+      function applyCacheConfig() {
+        const debug = debugMode.value === "true";
+        const types = [];
+        if (blobType.checked) types.push("blob");
+        if (arraybufferType.checked) types.push("arraybuffer");
+
+        // 重写 console.log 以捕获调试信息
+        if (debug) {
+          console.log = function (...args) {
+            originalLog.apply(console, args);
+            debugInfo.innerHTML += args.join(" ") + "<br>";
+          };
+        } else {
+          console.log = originalLog;
+          debugInfo.innerHTML = "调试模式已关闭";
+        }
+
+        // 应用缓存配置
+        cesiumCache = useCesiumCache(
+          {
+            dbName: "CesiumCacheDemo",
+            debug: debug,
+            types: types,
+          },
+          Cesium.Resource
+        );
+
+        status.textContent = "缓存配置已应用";
+      }
+
+      // 事件监听
+      applyConfig.addEventListener("click", applyCacheConfig);
+
+      resetConfig.addEventListener("click", () => {
+        debugMode.value = "false";
+        blobType.checked = true;
+        arraybufferType.checked = true;
+        debugInfo.innerHTML = "配置已重置";
+      });
+
+      getCacheSize.addEventListener("click", async () => {
+        if (cesiumCache) {
+          const size = await cesiumCache.getCacheSize();
+          cacheResult.textContent = `当前缓存大小: ${size}`;
+        } else {
+          cacheResult.textContent = "请先应用缓存配置";
+        }
+      });
+
+      clearCache.addEventListener("click", async () => {
+        if (cesiumCache) {
+          await cesiumCache.clear();
+          cacheResult.textContent = "缓存已清除";
+          status.textContent = "缓存已清除";
+        } else {
+          cacheResult.textContent = "请先应用缓存配置";
+        }
+      });
+
+      loadTileLayer.addEventListener("click", () => {
+        if (!cesiumCache) {
+          loadResult.textContent = "请先应用缓存配置";
+          return;
+        }
+
+        status.textContent = "正在加载瓦片图层...";
+        loadResult.textContent = "正在加载瓦片图层...";
+
+        // 添加一个瓦片图层
+        const imageryProvider = new Cesium.WebMapTileServiceImageryProvider({
+          url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/WMTS",
+          layer: "World_Imagery",
+          style: "default",
+          format: "image/jpeg",
+          tileMatrixSetID: "EPSG:3857",
+        });
+
+        viewer.imageryLayers.addImageryProvider(imageryProvider);
+
+        status.textContent = "瓦片图层加载完成";
+        loadResult.textContent =
+          "瓦片图层已加载，请查看调试信息了解缓存命中情况";
+      });
+
+      loadModel.addEventListener("click", () => {
+        if (!cesiumCache) {
+          loadResult.textContent = "请先应用缓存配置";
+          return;
+        }
+
+        status.textContent = "正在加载3D模型...";
+        loadResult.textContent = "正在加载3D模型...";
+
+        // 添加一个3D模型
+        const position = Cesium.Cartesian3.fromDegrees(116.3915, 39.9093, 0);
+        const heading = Cesium.Math.toRadians(0);
+        const pitch = 0;
+        const roll = 0;
+        const hpr = new Cesium.HeadingPitchRoll(heading, pitch, roll);
+        const orientation = Cesium.Quaternion.fromHeadingPitchRoll(hpr);
+
+        const entity = viewer.entities.add({
+          name: "测试模型",
+          position: position,
+          orientation: orientation,
+          model: {
+            uri: "https://sandcastle.cesium.com/SampleData/models/CesiumAir/Cesium_Air.glb",
+            minimumPixelSize: 64,
+            maximumScale: 20000,
+          },
+        });
+
+        viewer.trackedEntity = entity;
+
+        status.textContent = "3D模型加载完成";
+        loadResult.textContent = "3D模型已加载，请查看调试信息了解缓存命中情况";
+      });
+
+      // 初始化时应用默认配置
+      applyCacheConfig();
+    </script>
+  </body>
+</html>
