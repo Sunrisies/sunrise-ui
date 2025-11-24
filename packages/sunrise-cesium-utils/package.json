@@ -1,18 +1,27 @@
 {
     "name": "sunrise-cesium-utils",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Cesium utility library for Sunrise UI",
-    "main": "dist/index.min.js",
-    "module": "dist/index.mjs",
+    "main": "dist/iife/index.js",
+    "module": "dist/esm/index.js",
     "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/esm/index.js",
+            "require": "./dist/iife/index.js",
+            "browser": "./dist/iife/index.js"
+        }
+    },
     "files": [
         "dist",
-        "assets"
+        "README.md"
     ],
     "scripts": {
         "tsc": "tsc",
         "dev": "tsup --watch",
-        "build": "tsup"
+        "build": "tsup",
+        "push": "node publish.js"
     },
     "keywords": [
         "cesium",
@@ -20,7 +29,7 @@
         "map",
         "globe",
         "utility",
-        "sunrise-ui"
+        "sunrise-cesium-utils"
     ],
     "author": "Sunrise UI Team",
     "license": "MIT",
