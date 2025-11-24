@@ -44,6 +44,9 @@ importers:
       react-dom:
         specifier: ^19.1.1
         version: 19.2.0(react@19.2.0)
+      sunrise-cesium-utils:
+        specifier: workspace:*
+        version: link:../../packages/sunrise-cesium-utils
       sunrise-ui-plus:
         specifier: workspace:*
         version: link:../../packages/ui

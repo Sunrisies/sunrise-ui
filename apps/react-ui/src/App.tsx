@@ -4,8 +4,18 @@ import { genRandStr } from "sunrise-utils"
 import { TableDemo } from './components/table'
 import { Pagination } from './components/customPagination'
 import { DataTableDemo } from './components/dataTable'
+import { useCesiumCache } from 'sunrise-cesium-utils'
 function App() {
   console.log(genRandStr(100))
+  console.log(useCesiumCache)
+  const cesiumCache = useCesiumCache(
+    {
+      dbName: "CesiumCacheDemo",
+      debug: true,
+    },
+  )
+  console.log(cesiumCache, 'cesiumCache')
+  // const ss = new useCesiumCache({ debug: false })
   return (
     <div className="container" style={ { display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px' } }>
       <h1>Sunrise UI 组件示例</h1>
