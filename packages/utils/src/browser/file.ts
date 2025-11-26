@@ -3,6 +3,8 @@
  * @module file
  */
 
+import { downloadFile } from "./http";
+
 /**
  * 获取文件扩展名
  * @param filename 文件名
