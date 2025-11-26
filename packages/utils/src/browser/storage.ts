@@ -39,9 +39,9 @@ interface StorageItem<T = any> {
  * ```
  */
 export function setStorageItem<T>(
-  key: string, 
-  value: T, 
-  expire?: number, 
+  key: string,
+  value: T,
+  expire?: number,
   type: StorageType = StorageType.Local
 ): void {
   const storage = window[type];
@@ -67,7 +67,7 @@ export function setStorageItem<T>(
  * ```
  */
 export function getStorageItem<T>(
-  key: string, 
+  key: string,
   type: StorageType = StorageType.Local
 ): T | null {
   const storage = window[type];
@@ -104,7 +104,7 @@ export function getStorageItem<T>(
  * ```
  */
 export function removeStorageItem(
-  key: string, 
+  key: string,
   type: StorageType = StorageType.Local
 ): void {
   window[type].removeItem(key);
@@ -161,9 +161,12 @@ export function getStorageSize(type: StorageType = StorageType.Local): number {
   const storage = window[type];
   let size = 0;
 
-  for (let key in storage) {
-    if (storage.hasOwnProperty(key)) {
-      size += storage[key].length + key.length;
+  // 使用 storage.length 和 storage.key() 来遍历所有存储项
+  for (let i = 0; i < storage.length; i++) {
+    const key = storage.key(i);
+    if (key) {
+      const value = storage.getItem(key);
+      size += key.length + (value ? value.length : 0);
     }
   }
 
