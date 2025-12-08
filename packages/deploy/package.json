@@ -1,37 +1,57 @@
 {
   "name": "sunrise-deploy",
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "description": "自动化部署工具，支持多项目配置管理和一键部署",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
-  "description": "自动化部署工具",
   "bin": {
     "sunrise-deploy": "./dist/index.js"
   },
+  "files": [
+    "dist/**",
+    "README.md"
+  ],
   "scripts": {
+    "push": "node ./publish.cjs",
     "build": "tsup",
     "dev": "tsup --watch",
+    "tsc": "tsc",
+    "dev:tsc": "tsc -w",
     "clean": "rimraf node_modules dist"
   },
-  "dependencies": {
-    "chalk": "^5.3.0",
-    "commander": "^12.0.0",
-    "figlet": "^1.7.0",
-    "inquirer": "^9.2.12",
-    "archiver": "^6.0.1",
-    "dotenv": "^16.4.5"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@types/figlet": "^1.5.8",
-    "@types/inquirer": "^9.0.7",
-    "@types/archiver": "^6.0.2",
-    "ts-node": "^10.9.0",
-    "typescript": "^5.3.0",
-    "tsup": "8.5.0"
+  "repository": {
+    "directory": "packages/deploy",
+    "type": "git",
+    "url": "https://github.com/Sunrisies/sunrise-ui.git"
   },
   "keywords": [
     "deploy",
-    "automation"
+    "automation",
+    "typescript",
+    "cli",
+    "ssh",
+    "build",
+    "release"
   ],
-  "author": "",
-  "license": "ISC"
+  "author": "朝阳",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/archiver": "^6.0.2",
+    "@types/figlet": "^1.5.8",
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.0",
+    "tsup": "8.5.0",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "archiver": "^6.0.1",
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "cross-spawn": "^7.0.3",
+    "dotenv": "^16.4.5",
+    "figlet": "^1.7.0",
+    "inquirer": "^9.2.12"
+  }
 }

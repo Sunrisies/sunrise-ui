@@ -1,165 +1,151 @@
 # Sunrise Deploy
 
-自动化部署工具，支持通过配置文件灵活适配不同项目。
+自动化部署工具，支持多项目配置管理和一键部署。
 
-## 功能特点
+## 特性
 
-- 🚀 一键部署，自动化完成构建、压缩、上传和解压
-- ⚙️ 灵活的配置文件，支持不同项目的自定义设置
-- 🎨 美观的命令行界面，清晰的步骤提示
-- 📦 支持本地压缩和远程解压
-- 🔧 可配置的部署步骤，可选择性启用/禁用特定步骤
+- 🚀 一键部署项目到远程服务器
+- ⚙️ 管理多个项目配置
+- 📦 自动构建和压缩项目
+- 🔄 支持远程备份和解压
+- 🌳 支持路由部署模式
+- 💾 配置文件持久化存储
 
 ## 安装
 
 ```bash
-# 本地安装
-npm install sunrise-deploy
-
-# 全局安装
 npm install -g sunrise-deploy
 ```
 
 ## 使用方法
 
-### 1. 创建配置文件
+### 基本使用
 
-在项目根目录创建 `deploy.config.json` 文件，参考以下示例：
+安装完成后，在命令行中运行：
+
+```bash
+sunrise-deploy
+```
+
+### 指定配置文件
+
+```bash
+sunrise-deploy -c /path/to/deploy.config.json
+```
+
+## 配置文件
+
+配置文件默认位于 `~/deploy/deploy.config.json`，包含以下结构：
 
 ```json
 {
-  "server": "root@sunrise1024.top",
-  "remote": "/home/www/react-bun/",
-  "local": "D:\\project\\user\\bun-react",
-  "zip": "dist.zip",
-  "buildCommand": "bun run build",
-  "steps": {
-    "backup": {
-      "enabled": true,
-      "command": "mv $REMOTE/dist $REMOTE/dist_$(date +%Y%m%d_%H%M%S) 2>/dev/null || true; mkdir -p $REMOTE/dist"
-    },
-    "build": {
-      "enabled": true,
-      "description": "本地构建"
-    },
-    "zip": {
-      "enabled": true,
-      "description": "压缩文件"
-    },
-    "upload": {
-      "enabled": true,
-      "description": "上传文件"
-    },
-    "extract": {
-      "enabled": true,
-      "command": "cd $REMOTE/dist && unzip $ZIP && rm -r $ZIP && cd ship && mv * ../",
-      "description": "远程解压并清理"
+  "default": {
+    "zip": "dist.zip",
+    "buildCommand": "npm run build",
+    "steps": {
+      "backup": {
+        "enabled": true,
+        "command": "cd $REMOTE && cp -r dist dist.backup",
+        "description": "远程备份旧版本"
+      },
+      "build": {
+        "enabled": true,
+        "description": "本地构建项目"
+      },
+      "zip": {
+        "enabled": true,
+        "description": "压缩项目文件"
+      },
+      "upload": {
+        "enabled": true,
+        "description": "上传文件到服务器"
+      }
+    }
+  },
+  "projects": {
+    "my-project": {
+      "server": "user@example.com",
+      "remote": "/var/www/my-project",
+      "local": "/path/to/local/project",
+      "steps": {
+        "extract": {
+          "enabled": true,
+          "command": "cd $REMOTE/dist && unzip $ZIP && rm $ZIP",
+          "description": "远程解压文件"
+        }
+      }
     }
   }
 }
 ```
 
-### 2. 运行部署
+### 配置说明
 
-```bash
-# 使用默认配置文件
-sunrise-deploy
-
-# 指定配置文件
-sunrise-deploy --config /path/to/deploy.config.json
-```
-
-### 3. 交互式操作
-
-运行命令后，会进入交互式界面，可以选择：
-
-- 🚀 开始部署：执行完整的部署流程
-- ⚙️ 配置管理：查看或编辑配置文件
-- ❌ 退出：退出程序
-
-## 配置说明
-
-| 字段 | 说明 |
-|------|------|
-| server | 服务器地址，格式：user@hostname |
-| remote | 远程服务器上的部署路径 |
-| local | 本地项目路径 |
-| zip | 压缩文件名 |
-| buildCommand | 本地构建命令 |
-| steps | 部署步骤配置 |
-
-### 部署步骤配置
-
-每个步骤都有 `enabled` 字段控制是否启用，可选的 `description` 字段自定义显示名称，部分步骤支持自定义 `command` 字段：
-
-- backup：远程备份旧版本
-- build：本地构建
-- zip：压缩文件
-- upload：上传文件
-- extract：远程解压并清理
+- `default`: 默认配置，所有项目共享
+  - `zip`: 压缩文件名
+  - `buildCommand`: 本地构建命令
+  - `steps`: 部署步骤配置
+- `projects`: 各项目特定配置
+  - `server`: 服务器地址
+  - `remote`: 远程路径
+  - `local`: 本地路径
+  - `steps.extract`: 解压步骤配置
 
 ### 变量替换
 
-在命令中可以使用以下变量，它们会被自动替换为配置中的值：
+在命令中可以使用以下变量：
+- `$SERVER`: 服务器地址
+- `$REMOTE`: 远程路径
+- `$ZIP`: 压缩文件名
 
-- `$SERVER`：服务器地址
-- `$REMOTE`：远程路径
-- `$ZIP`：压缩文件名
+## 功能说明
 
-## 示例
+### 交互式界面
 
-### React项目部署示例
+工具提供了友好的交互式界面，支持以下操作：
 
-```json
-{
-  "server": "user@example.com",
-  "remote": "/var/www/my-react-app/",
-  "local": "/home/user/projects/my-react-app",
-  "zip": "build.zip",
-  "buildCommand": "npm run build",
-  "steps": {
-    "backup": {
-      "enabled": true,
-      "command": "mv $REMOTE/build $REMOTE/build_$(date +%Y%m%d_%H%M%S) 2>/dev/null || true; mkdir -p $REMOTE/build"
-    },
-    "build": {
-      "enabled": true,
-      "description": "构建React应用"
-    },
-    "zip": {
-      "enabled": true,
-      "description": "压缩构建文件"
-    },
-    "upload": {
-      "enabled": true,
-      "description": "上传到服务器"
-    },
-    "extract": {
-      "enabled": true,
-      "command": "cd $REMOTE && unzip $ZIP && rm $ZIP",
-      "description": "解压并清理"
-    }
-  }
-}
-```
+1. 🚀 开始部署：选择项目并执行部署流程
+2. ⚙️ 配置管理：添加、查看、删除项目配置
+3. ❌ 退出程序
+
+### 配置管理
+
+配置管理功能支持：
+
+- 📋 查看当前配置：显示所有项目配置
+- 📝 新增项目配置：添加新项目配置
+- 📝 删除项目配置：删除已有项目配置
+
+### 部署流程
+
+部署流程包含以下步骤：
+
+1. 远程备份（可选）
+2. 本地构建
+3. 文件压缩
+4. 文件上传
+5. 远程解压和清理
 
 ## 开发
 
+### 构建项目
+
 ```bash
-# 克隆仓库
-git clone https://github.com/your-username/sunrise-deploy.git
-
-# 安装依赖
-cd sunrise-deploy
-npm install
-
-# 开发模式
-npm run dev
-
-# 构建
 npm run build
+```
+
+### 开发模式
+
+```bash
+npm run dev
+```
+
+### 类型检查
+
+```bash
+npm run tsc
 ```
 
 ## 许可证
 
-ISC
+MIT
