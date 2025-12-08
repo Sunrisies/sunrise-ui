@@ -215,6 +215,10 @@ export class Deployer {
   async interactiveMode(): Promise<void> {
     displayHeader();
 
+    // 检查是否有项目配置
+    const config = this.configManager.getConfig();
+    const hasProjects = Object.keys(config.projects).length > 0;
+
     const { action } = await inquirer.prompt([
       {
         type: "list",
@@ -230,8 +234,13 @@ export class Deployer {
 
     switch (action) {
       case "deploy":
-        await this.deploy();
-        await this.interactiveMode();
+        if (!hasProjects) {
+          console.log(chalk.yellow("⚠️ 当前没有任何项目配置，请先添加项目配置"));
+          await this.manageConfig();
+        } else {
+          await this.deploy();
+          await this.interactiveMode();
+        }
         break;
       case "config":
         await this.manageConfig();

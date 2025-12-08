@@ -33,16 +33,54 @@ export class ConfigManager {
         this.config = JSON.parse(configContent);
         console.log(chalk.green(`✅ 已加载配置文件: ${this.configFilePath}`));
       } else {
-        console.log(chalk.red(`❌ 配置文件不存在: ${this.configFilePath}`));
-        console.log(
-          chalk.yellow(`💡 请参考 deploy.config.example.json 创建配置文件`)
-        );
-        process.exit(1);
+        console.log(chalk.yellow(`⚠️ 配置文件不存在: ${this.configFilePath}`));
+        console.log(chalk.blue(`🔄 正在创建默认配置文件...`));
+
+        // 创建默认配置
+        this.config = this.createDefaultConfig();
+
+        // 保存默认配置到文件
+        this.saveConfig();
+        console.log(chalk.green(`✅ 已创建默认配置文件: ${this.configFilePath}`));
+        console.log(chalk.yellow(`💡 请根据需要修改配置文件后再次运行`));
       }
     } catch (error) {
       console.log(chalk.red(`❌ 配置文件加载失败:`), error);
       process.exit(1);
     }
+  }
+
+  /**
+   * 创建默认配置
+   * @returns 默认配置对象
+   */
+  private createDefaultConfig(): DeployConfig {
+    return {
+      default: {
+        zip: "dist.zip",
+        buildCommand: "npm run build",
+        steps: {
+          backup: {
+            enabled: true,
+            command: "cd $REMOTE && cp -r dist dist.backup || true",
+            description: "远程备份旧版本"
+          },
+          build: {
+            enabled: true,
+            description: "本地构建项目"
+          },
+          zip: {
+            enabled: true,
+            description: "压缩项目文件"
+          },
+          upload: {
+            enabled: true,
+            description: "上传文件到服务器"
+          }
+        }
+      },
+      projects: {}
+    };
   }
 
   /**
@@ -157,6 +195,25 @@ export class ConfigManager {
         },
       },
       {
+        type: "input",
+        name: "server",
+        message: "请输入服务器地址:",
+        validate: (input) => {
+          if (!input.trim()) {
+            return "服务器地址不能为空";
+          }
+          return true;
+        },
+        when: () => {
+          // 如果没有已配置的服务器，直接显示输入框
+          const servers = new Set<string>();
+          Object.values(this.config.projects).forEach((project) => {
+            servers.add(project.server);
+          });
+          return servers.size === 0;
+        },
+      },
+      {
         type: "list",
         name: "serverType",
         message: "请选择服务器地址类型:",
@@ -164,6 +221,14 @@ export class ConfigManager {
           { name: "从已有服务器中选择", value: "existing" },
           { name: "输入新的服务器地址", value: "new" },
         ],
+        when: () => {
+          // 如果有已配置的服务器，显示选择框
+          const servers = new Set<string>();
+          Object.values(this.config.projects).forEach((project) => {
+            servers.add(project.server);
+          });
+          return servers.size > 0;
+        },
       },
       {
         type: "list",
@@ -177,7 +242,14 @@ export class ConfigManager {
           });
           return Array.from(servers);
         },
-        when: (answers) => answers.serverType === "existing",
+        when: (answers) => {
+          // 如果有已配置的服务器且用户选择了"从已有服务器中选择"，显示服务器列表
+          const servers = new Set<string>();
+          Object.values(this.config.projects).forEach((project) => {
+            servers.add(project.server);
+          });
+          return servers.size > 0 && answers.serverType === "existing";
+        },
       },
       {
         type: "input",
@@ -189,7 +261,14 @@ export class ConfigManager {
           }
           return true;
         },
-        when: (answers) => answers.serverType === "new",
+        when: (answers) => {
+          // 如果有已配置的服务器且用户选择了"输入新的服务器地址"，显示输入框
+          const servers = new Set<string>();
+          Object.values(this.config.projects).forEach((project) => {
+            servers.add(project.server);
+          });
+          return servers.size > 0 && answers.serverType === "new";
+        },
       },
       {
         type: "confirm",
