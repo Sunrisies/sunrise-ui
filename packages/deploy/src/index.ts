@@ -375,7 +375,8 @@ class Deployer {
         message: "配置管理:",
         choices: [
           { name: "📋 查看当前配置", value: "view" },
-          { name: "📝 编辑配置文件", value: "edit" },
+          { name: "📝 新增项目配置", value: "add" },
+          { name: "📝 删除项目配置", value: "delete" },
           { name: "🔙 返回主菜单", value: "back" },
         ],
       },
@@ -385,17 +386,184 @@ class Deployer {
       case "view":
         console.log(chalk.cyan("\n当前配置:"));
         console.log(JSON.stringify(this.config, null, 2));
+        await inquirer.prompt([{ type: "input", name: "continue", message: "按回车键继续..." }]);
         await this.manageConfig();
         break;
-      case "edit":
-        const configPath = path.join(this.configFilePath);
-        console.log(chalk.yellow(`\n请手动编辑配置文件: ${configPath}`));
-        await this.manageConfig();
+      case "add":
+        await this.addProject();
+        break;
+      case "delete":
+        await this.deleteProject();
         break;
       case "back":
         await this.interactiveMode();
         break;
     }
+  }
+  async addProject(): Promise<void> {
+    const answers = await inquirer.prompt([
+      {
+        type: "input",
+        name: "name",
+        message: "请输入项目名称:",
+        validate: (input) => {
+          if (!input.trim()) {
+            return "项目名称不能为空";
+          }
+          if (this.config.projects[input]) {
+            return "项目名称已存在";
+          }
+          return true;
+        },
+      },
+      {
+        type: "input",
+        name: "local",
+        message: "请输入本地项目路径:",
+      },
+      {
+        type: "input",
+        name: "remote",
+        message: "请输入远程服务器路径:",
+        validate: (input) => {
+          if (!input.trim()) {
+            return "远程服务器路径不能为空";
+          }
+          return true;
+        },
+      },
+      {
+        type: "input",
+        name: "server",
+        message: "请输入服务器地址:",
+        validate: (input) => {
+          if (!input.trim()) {
+            return "服务器地址不能为空";
+          }
+          return true;
+        },
+      },
+      {
+        type: "confirm",
+        name: "extractEnabled",
+        message: "是否启用远程解压步骤?",
+        default: true,
+      },
+      {
+        type: "list",
+        name: "extractType",
+        message: "请选择解压类型:",
+        choices: [
+          { name: "正常的解压上传", value: "normal" },
+          { name: "带有路由的解压", value: "router" },
+        ],
+      },
+    ]);
+
+    const { name, local, remote, server, extractEnabled, extractType } =
+      answers;
+    let extractCommand = "";
+    let extractDescription = "远程解压上传文件";
+
+    // 根据解压类型设置不同的命令和描述
+    if (extractEnabled) {
+      switch (extractType) {
+        case "normal":
+          extractCommand = `cd $REMOTE/dist && unzip $ZIP && rm $ZIP`;
+          break;
+        case "router":
+          // 需要额外询问路由名称
+          const { routerName } = await inquirer.prompt([
+            {
+              type: "input",
+              name: "routerName",
+              message: "请输入路由名称:",
+              validate: (input) => {
+                if (!input.trim()) return "路由名称不能为空";
+                return true;
+              },
+            },
+          ]);
+          extractCommand = `cd $REMOTE/dist && unzip $ZIP && rm $ZIP && cd ${routerName} && mv * ../ && cd .. && rm -rf ${routerName}`;
+          extractDescription = "远程解压上传文件并处理路由";
+          break;
+      }
+    }
+    const localPath = local || process.cwd();
+    // 创建新项目配置
+    const newProject = {
+      server,
+      remote,
+      local: localPath,
+      steps: {
+        extract: {
+          enabled: extractEnabled,
+          command: extractCommand,
+          description: extractDescription,
+        },
+      },
+    };
+    // 添加到配置中
+    this.config.projects[name] = newProject;
+
+    // 保存配置
+    await this.saveConfig();
+
+    console.log(chalk.green(`✅ 项目 "${name}" 添加成功`));
+
+    // 返回配置管理菜单
+    await this.manageConfig();
+  }
+
+  async saveConfig(): Promise<void> {
+    try {
+      fs.writeFileSync(
+        this.configFilePath,
+        JSON.stringify(this.config, null, 2),
+        "utf-8"
+      );
+      console.log(chalk.green("✅ 配置已保存"));
+    } catch (error) {
+      console.log(chalk.red("❌ 保存配置失败:"), error);
+    }
+  }
+
+  async deleteProject(): Promise<void> {
+    const projectNames = Object.keys(this.config.projects);
+
+    if (projectNames.length === 0) {
+      console.log(chalk.yellow("⚠️ 当前没有任何项目配置"));
+      await this.manageConfig();
+      return;
+    }
+
+    const { projectName } = await inquirer.prompt([
+      {
+        type: "list",
+        name: "projectName",
+        message: "选择要删除的项目:",
+        choices: projectNames,
+      },
+    ]);
+
+    const { confirm } = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "confirm",
+        message: `确定要删除项目 "${projectName}" 吗？`,
+        default: false,
+      },
+    ]);
+
+    if (confirm) {
+      delete this.config.projects[projectName];
+      await this.saveConfig();
+      console.log(chalk.green(`✅ 项目 "${projectName}" 删除成功`));
+    } else {
+      console.log(chalk.gray("❌ 操作已取消"));
+    }
+
+    await this.manageConfig();
   }
 }
 
