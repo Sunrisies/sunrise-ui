@@ -157,15 +157,39 @@ export class ConfigManager {
         },
       },
       {
+        type: "list",
+        name: "serverType",
+        message: "请选择服务器地址类型:",
+        choices: [
+          { name: "从已有服务器中选择", value: "existing" },
+          { name: "输入新的服务器地址", value: "new" },
+        ],
+      },
+      {
+        type: "list",
+        name: "server",
+        message: "请选择服务器地址:",
+        choices: () => {
+          // 从现有项目中提取所有服务器地址
+          const servers = new Set<string>();
+          Object.values(this.config.projects).forEach((project) => {
+            servers.add(project.server);
+          });
+          return Array.from(servers);
+        },
+        when: (answers) => answers.serverType === "existing",
+      },
+      {
         type: "input",
         name: "server",
-        message: "请输入服务器地址:",
+        message: "请输入新的服务器地址:",
         validate: (input) => {
           if (!input.trim()) {
             return "服务器地址不能为空";
           }
           return true;
         },
+        when: (answers) => answers.serverType === "new",
       },
       {
         type: "confirm",
