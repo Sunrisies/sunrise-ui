@@ -3,11 +3,13 @@
  * @module file
  */
 
+import { downloadFile } from "./http";
+
 /**
  * 获取文件扩展名
  * @param filename 文件名
  * @returns 文件扩展名（不包含点）
- * 
+ *
  * @example
  * ```typescript
  * getFileExtension('document.pdf'); // 'pdf'
@@ -16,14 +18,14 @@
  * ```
  */
 export function getFileExtension(filename: string): string {
-  return filename.slice(((filename.lastIndexOf('.') - 1) >>> 0) + 2);
+  return filename.slice(((filename.lastIndexOf(".") - 1) >>> 0) + 2);
 }
 
 /**
  * 获取文件名（不包含扩展名）
  * @param filename 文件名
  * @returns 不包含扩展名的文件名
- * 
+ *
  * @example
  * ```typescript
  * getFileName('document.pdf'); // 'document'
@@ -31,8 +33,10 @@ export function getFileExtension(filename: string): string {
  * ```
  */
 export function getFileName(filename: string): string {
-  const baseName = filename.split(/[\/]/).pop() || '';
-  return baseName.includes('.') ? baseName.substring(0, baseName.lastIndexOf('.')) : baseName;
+  const baseName = filename.split(/[\/]/).pop() || "";
+  return baseName.includes(".")
+    ? baseName.substring(0, baseName.lastIndexOf("."))
+    : baseName;
 }
 
 /**
@@ -40,7 +44,7 @@ export function getFileName(filename: string): string {
  * @param bytes 文件大小（字节）
  * @param decimals 小数位数，默认为2
  * @returns 格式化后的文件大小字符串
- * 
+ *
  * @example
  * ```typescript
  * formatFileSize(1024); // '1 KB'
@@ -49,22 +53,22 @@ export function getFileName(filename: string): string {
  * ```
  */
 export function formatFileSize(bytes: number, decimals: number = 2): string {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
 
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
 
 /**
  * 读取文件为DataURL
  * @param file 文件对象
  * @returns Promise<DataURL> DataURL字符串
- * 
+ *
  * @example
  * ```typescript
  * const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -80,10 +84,10 @@ export function readFileAsDataURL(file: File): Promise<string> {
     const reader = new FileReader();
 
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
+      if (typeof reader.result === "string") {
         resolve(reader.result);
       } else {
-        reject(new Error('Failed to read file as DataURL'));
+        reject(new Error("Failed to read file as DataURL"));
       }
     };
 
@@ -96,7 +100,7 @@ export function readFileAsDataURL(file: File): Promise<string> {
  * 读取文件为文本
  * @param file 文件对象
  * @returns Promise<string> 文件内容
- * 
+ *
  * @example
  * ```typescript
  * const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -112,10 +116,10 @@ export function readFileAsText(file: File): Promise<string> {
     const reader = new FileReader();
 
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
+      if (typeof reader.result === "string") {
         resolve(reader.result);
       } else {
-        reject(new Error('Failed to read file as text'));
+        reject(new Error("Failed to read file as text"));
       }
     };
 
@@ -129,18 +133,22 @@ export function readFileAsText(file: File): Promise<string> {
  * @param content 文件内容
  * @param filename 文件名
  * @param mimeType MIME类型，默认为'text/plain'
- * 
+ *
  * @example
  * ```typescript
  * // 下载文本文件
  * createAndDownloadFile('Hello, world!', 'hello.txt');
- * 
+ *
  * // 下载JSON文件
  * const data = { name: 'John', age: 30 };
  * createAndDownloadFile(JSON.stringify(data, null, 2), 'data.json', 'application/json');
  * ```
  */
-export function createAndDownloadFile(content: string, filename: string, mimeType: string = 'text/plain'): void {
+export function createAndDownloadFile(
+  content: string,
+  filename: string,
+  mimeType: string = "text/plain"
+): void {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   downloadFile(url, filename);
@@ -152,7 +160,7 @@ export function createAndDownloadFile(content: string, filename: string, mimeTyp
  * @param file 文件对象
  * @param allowedTypes 允许的MIME类型数组
  * @returns 是否为允许的文件类型
- * 
+ *
  * @example
  * ```typescript
  * const file = fileInput.files?.[0];
@@ -172,7 +180,7 @@ export function isAllowedFileType(file: File, allowedTypes: string[]): boolean {
  * @param file 文件对象
  * @param maxSizeInMB 最大文件大小（MB）
  * @returns 是否超过大小限制
- * 
+ *
  * @example
  * ```typescript
  * const file = fileInput.files?.[0];

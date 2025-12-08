@@ -1,6 +1,6 @@
 {
   "name": "sunrise-utils",
-  "version": "1.0.34",
+  "version": "1.0.35",
   "description": "一个使用esbuild进行本地开发的工具库， 包含了一些常用的工具函数，主要是使用在浏览器环境",
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",

@@ -348,3 +348,57 @@ export function URLSearchParamsUtils(data: { [key: string]: any }) {
 
   return searchParams.toString();
 }
+
+/**
+ * @public
+ * 下载本地文件
+ * @param url - 文件下载地址
+ * @param filename - 文件名
+ * @returns
+ * @throws {Error} - 下载失败时抛出错误
+ */
+
+/**
+ * 下载本地文件
+ * @public
+ *
+ * @param file - 要下载的文件（File 或 Blob 对象）
+ * @param filename - 保存时使用的文件名（需包含扩展名）
+ * @memberof module:browser/downloadLocalFile
+ * @func 下载本地文件
+ * @example
+ * ```typescript
+ * // 从文件输入获取文件并下载
+ * const input = document.querySelector('input[type="file"]');
+ * const file = input.files[0];
+ * await downloadLocalFile(file, 'backup-file.pdf');
+ *
+ * // 直接下载 Blob 数据
+ * const blob = new Blob(['Hello World'], { type: 'text/plain' });
+ * await downloadLocalFile(blob, 'hello.txt');
+ * ```
+ */
+export async function downloadLocalFile(
+  file: File | Blob,
+  filename: string
+): Promise<void> {
+  ensureEnvironment("browser", "downloadLocalFile");
+  try {
+    // 创建一个指向文件/Blob 的临时 URL
+    const blobUrl = URL.createObjectURL(file);
+
+    // 创建 <a> 标签并触发下载
+    const aTag = document.createElement("a");
+    aTag.href = blobUrl;
+    aTag.download = filename; // 设置下载的文件名
+    document.body.appendChild(aTag); // 将 <a> 标签添加到文档中
+    aTag.click(); // 触发点击事件
+    document.body.removeChild(aTag); // 移除 <a> 标签
+
+    // 释放 Blob URL
+    URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error("下载本地文件时出错:", error);
+    throw error; // 抛出错误以便调用方处理
+  }
+}
