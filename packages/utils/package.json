@@ -5,6 +5,7 @@
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",
   "modules": "dist/index.mjs",
+  "type": "module",
   "files": [
     "dist/**",
     "README.md"
