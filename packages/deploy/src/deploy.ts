@@ -170,6 +170,7 @@ export class Deployer {
     }
 
     console.log(chalk.green("====== 发布完成 ======"));
+    process.exit(0);
   }
 
   /**
@@ -235,7 +236,9 @@ export class Deployer {
     switch (action) {
       case "deploy":
         if (!hasProjects) {
-          console.log(chalk.yellow("⚠️ 当前没有任何项目配置，请先添加项目配置"));
+          console.log(
+            chalk.yellow("⚠️ 当前没有任何项目配置，请先添加项目配置")
+          );
           await this.manageConfig();
         } else {
           await this.deploy();
