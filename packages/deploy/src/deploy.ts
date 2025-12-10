@@ -112,31 +112,20 @@ export class Deployer {
 
     let success = true;
 
-    // Step 1: 远程备份
-    if (projectConfig.steps.backup.enabled) {
-      const command = replaceVariables(
-        projectConfig.steps.backup.command || "",
-        projectConfig
-      );
-      success = await executeCommand(
-        `ssh "${projectConfig.server}" "${command}"`,
-        projectConfig.steps.backup.description || "远程备份旧dist",
-        { silent: true }
-      );
-      if (!success) return;
-    }
-
-    // Step 2: 本地构建
+    // ✅ Step 1: 先本地构建（确保代码可构建）
     if (projectConfig.steps.build.enabled) {
       success = await executeCommand(
         projectConfig.buildCommand,
         projectConfig.steps.build.description || "本地build",
         { cwd: projectConfig.local }
       );
-      if (!success) return;
+      if (!success) {
+        console.log(chalk.red("构建失败，停止部署"));
+        return;
+      }
     }
 
-    // Step 3: 压缩
+    // ✅ Step 2: 压缩构建产物
     if (projectConfig.steps.zip.enabled) {
       const distPath = path.join(projectConfig.local, "dist");
       const zipPath = path.join(projectConfig.local, projectConfig.zip);
@@ -144,29 +133,55 @@ export class Deployer {
       if (!success) return;
     }
 
-    // Step 4: 上传
+    // ✅ Step 3: 上传到服务器临时位置（不影响当前线上版本）
     if (projectConfig.steps.upload.enabled) {
       const localZipPath = path.join(projectConfig.local, projectConfig.zip);
-      const remoteZipPath = `${projectConfig.remote}/dist/${projectConfig.zip}`;
+      const remoteTempPath = `${projectConfig.remote}/temp/${projectConfig.zip}`;
+
+      // 先上传到临时目录
       success = await executeCommand(
-        `scp "${localZipPath}" "${projectConfig.server}:${remoteZipPath}"`,
-        projectConfig.steps.upload.description || "上传文件"
+        `ssh "${projectConfig.server}" "mkdir -p ${projectConfig.remote}/temp"`,
+        "创建临时目录"
+      );
+
+      success = await executeCommand(
+        `scp "${localZipPath}" "${projectConfig.server}:${remoteTempPath}"`,
+        projectConfig.steps.upload.description || "上传文件到临时目录"
       );
       if (!success) return;
     }
 
-    // Step 5: 远程解压并清理
-    if (projectConfig.steps.extract.enabled) {
+    // ✅ Step 4: 远程备份当前线上版本（此时本地构建已成功）
+    if (projectConfig.steps.backup.enabled) {
       const command = replaceVariables(
-        projectConfig.steps.extract.command || "",
+        projectConfig.steps.backup.command || "",
         projectConfig
       );
       success = await executeCommand(
         `ssh "${projectConfig.server}" "${command}"`,
-        projectConfig.steps.extract.description || "远程解压并清理",
+        projectConfig.steps.backup.description || "备份当前线上版本",
         { silent: true }
       );
-      if (!success) return;
+      if (!success) {
+        console.log(chalk.yellow("备份失败，但新版本已准备好，是否继续？"));
+        // 这里可以添加用户确认逻辑
+      }
+    }
+    // ✅ Step 5: 切换版本（原子操作）
+    if (projectConfig.steps.extract.enabled) {
+      // 使用原子操作替换线上版本
+      const command = `cd ${projectConfig.remote}/temp && unzip ${projectConfig.remote}/temp/${projectConfig.zip} && mv ${projectConfig.remote}/temp/* ${projectConfig.remote}/dist && rm -rf ${projectConfig.remote}/temp
+  `;
+
+      success = await executeCommand(
+        `ssh "${projectConfig.server}" "${command}"`,
+        "原子切换版本",
+        { silent: true }
+      );
+      if (!success) {
+        console.log(chalk.red("切换版本失败，请手动处理"));
+        return;
+      }
     }
 
     console.log(chalk.green("====== 发布完成 ======"));

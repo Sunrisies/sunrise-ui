@@ -33,7 +33,6 @@ export async function executeCommand(
     });
 
     child.on("close", (code) => {
-      console.log(code, "==========");
       if (code === 0) {
         console.log(chalk.green(`✅ ${description}完成`));
         resolve(true);
