@@ -6,10 +6,12 @@ import {
   replaceVariables,
   zipDirectory,
   displayHeader,
+  gitCommit,
+  updatePackageVersion,
+  revertPackageVersion,
+  getCurrentVersion,
 } from "./utils";
 import { ConfigManager } from "./config";
-
-// import { DeployConfig } from "./types";
 
 export class Deployer {
   private configManager: ConfigManager;
@@ -31,7 +33,17 @@ export class Deployer {
     local: string;
     zip: string;
     buildCommand: string;
+    versionUpdate: {
+      enabled: boolean;
+      type: "major" | "minor" | "patch";
+      description?: string;
+    };
     steps: {
+      gitCommit: {
+        enabled: boolean;
+        message?: string;
+        description?: string;
+      };
       backup: {
         enabled: boolean;
         command?: string;
@@ -67,6 +79,7 @@ export class Deployer {
       local: projectConfig.local,
       zip: defaultConfig.zip,
       buildCommand: defaultConfig.buildCommand,
+      versionUpdate: defaultConfig.versionUpdate,
       steps: {
         ...defaultConfig.steps,
         extract: projectConfig.steps.extract,
@@ -111,6 +124,9 @@ export class Deployer {
     }
 
     let success = true;
+    let originalVersion: string | null = null;
+    let newVersion: string | null = null;
+    let versionUpdateSuccess = false;
 
     // ✅ Step 1: 先本地构建（确保代码可构建）
     if (projectConfig.steps.build.enabled) {
@@ -125,15 +141,59 @@ export class Deployer {
       }
     }
 
-    // ✅ Step 2: 压缩构建产物
+    // ✅ Step 2: 版本自动更新（在构建成功后）
+    if (projectConfig.versionUpdate.enabled) {
+      originalVersion = getCurrentVersion(projectConfig.local);
+      if (originalVersion) {
+        console.log(chalk.cyan(`当前版本: ${originalVersion}`));
+        newVersion = await updatePackageVersion(
+          projectConfig.local,
+          projectConfig.versionUpdate.type
+        );
+        if (newVersion) {
+          versionUpdateSuccess = true;
+          console.log(
+            chalk.green(`✅ 版本已更新: ${originalVersion} → ${newVersion}`)
+          );
+        } else {
+          console.log(chalk.yellow("⚠️ 版本更新失败，继续部署流程"));
+        }
+      } else {
+        console.log(chalk.yellow("⚠️ 无法获取当前版本，跳过版本更新"));
+      }
+    }
+
+    // ✅ Step 3: Git 自动提交（可选，如果版本更新成功）
+    if (projectConfig.steps.gitCommit?.enabled) {
+      // 优先使用新版本号，如果没有则使用原始版本号，如果都没有则使用时间戳
+      const versionInfo =
+        newVersion || originalVersion || new Date().toLocaleString();
+      const commitMessage =
+        projectConfig.steps.gitCommit.message ||
+        `chore: auto commit before deploy - v${versionInfo}`;
+      success = await gitCommit(projectConfig.local, commitMessage);
+      if (!success) {
+        console.log(chalk.yellow("⚠️ Git 提交失败，但继续部署流程"));
+        // Git 提交失败不影响部署流程
+      }
+    }
+
+    // ✅ Step 4: 压缩构建产物
     if (projectConfig.steps.zip.enabled) {
       const distPath = path.join(projectConfig.local, "dist");
       const zipPath = path.join(projectConfig.local, projectConfig.zip);
       success = await zipDirectory(distPath, zipPath);
-      if (!success) return;
+      if (!success) {
+        // 如果失败且版本已更新，回退版本
+        if (versionUpdateSuccess && originalVersion) {
+          console.log(chalk.yellow("⚠️ 压缩失败，回退版本..."));
+          await revertPackageVersion(projectConfig.local, originalVersion);
+        }
+        return;
+      }
     }
 
-    // ✅ Step 3: 上传到服务器临时位置（不影响当前线上版本）
+    // ✅ Step 5: 上传到服务器临时位置（不影响当前线上版本）
     if (projectConfig.steps.upload.enabled) {
       const localZipPath = path.join(projectConfig.local, projectConfig.zip);
       const remoteTempPath = `${projectConfig.remote}/temp/${projectConfig.zip}`;
@@ -148,10 +208,17 @@ export class Deployer {
         `scp "${localZipPath}" "${projectConfig.server}:${remoteTempPath}"`,
         projectConfig.steps.upload.description || "上传文件到临时目录"
       );
-      if (!success) return;
+      if (!success) {
+        // 如果失败且版本已更新，回退版本
+        if (versionUpdateSuccess && originalVersion) {
+          console.log(chalk.yellow("⚠️ 上传失败，回退版本..."));
+          await revertPackageVersion(projectConfig.local, originalVersion);
+        }
+        return;
+      }
     }
 
-    // ✅ Step 4: 远程备份当前线上版本（此时本地构建已成功）
+    // ✅ Step 6: 远程备份当前线上版本（此时本地构建已成功）
     if (projectConfig.steps.backup.enabled) {
       const command = replaceVariables(
         projectConfig.steps.backup.command || "",
@@ -163,15 +230,15 @@ export class Deployer {
         { silent: true }
       );
       if (!success) {
-        console.log(chalk.yellow("备份失败，但新版本已准备好，是否继续？"));
-        // 这里可以添加用户确认逻辑
+        console.log(chalk.yellow("⚠️ 备份失败，但新版本已准备好"));
+        // 备份失败不影响后续流程
       }
     }
-    // ✅ Step 5: 切换版本（原子操作）
+
+    // ✅ Step 7: 切换版本（原子操作）
     if (projectConfig.steps.extract.enabled) {
       // 使用原子操作替换线上版本
-      const command = `cd ${projectConfig.remote}/temp && unzip ${projectConfig.remote}/temp/${projectConfig.zip} && mv ${projectConfig.remote}/temp/* ${projectConfig.remote}/dist && rm -rf ${projectConfig.remote}/temp
-  `;
+      const command = `cd ${projectConfig.remote}/temp && unzip ${projectConfig.remote}/temp/${projectConfig.zip} && mv ${projectConfig.remote}/temp/* ${projectConfig.remote}/dist && rm -rf ${projectConfig.remote}/temp`;
 
       success = await executeCommand(
         `ssh "${projectConfig.server}" "${command}"`,
@@ -179,12 +246,23 @@ export class Deployer {
         { silent: true }
       );
       if (!success) {
-        console.log(chalk.red("切换版本失败，请手动处理"));
+        console.log(chalk.red("❌ 切换版本失败，请手动处理"));
+
+        // 关键步骤失败，回退本地版本
+        if (versionUpdateSuccess && originalVersion) {
+          console.log(chalk.yellow("⚠️ 自动回退本地版本..."));
+          await revertPackageVersion(projectConfig.local, originalVersion);
+          console.log(chalk.red("❌ 部署失败，版本已回退"));
+        }
         return;
       }
     }
 
+    // 部署成功
     console.log(chalk.green("====== 发布完成 ======"));
+    if (newVersion) {
+      console.log(chalk.green(`✅ 新版本 ${newVersion} 已成功部署`));
+    }
     process.exit(0);
   }
 

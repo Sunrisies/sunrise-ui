@@ -41,7 +41,9 @@ export class ConfigManager {
 
         // 保存默认配置到文件
         this.saveConfig();
-        console.log(chalk.green(`✅ 已创建默认配置文件: ${this.configFilePath}`));
+        console.log(
+          chalk.green(`✅ 已创建默认配置文件: ${this.configFilePath}`)
+        );
         console.log(chalk.yellow(`💡 请根据需要修改配置文件后再次运行`));
       }
     } catch (error) {
@@ -59,27 +61,37 @@ export class ConfigManager {
       default: {
         zip: "dist.zip",
         buildCommand: "npm run build",
+        versionUpdate: {
+          enabled: false,
+          type: "patch",
+          description: "自动更新 package.json 版本",
+        },
         steps: {
+          gitCommit: {
+            enabled: false,
+            message: "chore: auto commit before deploy",
+            description: "自动提交本地变更",
+          },
           backup: {
             enabled: true,
             command: "cd $REMOTE && cp -r dist dist.backup || true",
-            description: "远程备份旧版本"
+            description: "远程备份旧版本",
           },
           build: {
             enabled: true,
-            description: "本地构建项目"
+            description: "本地构建项目",
           },
           zip: {
             enabled: true,
-            description: "压缩项目文件"
+            description: "压缩项目文件",
           },
           upload: {
             enabled: true,
-            description: "上传文件到服务器"
-          }
-        }
+            description: "上传文件到服务器",
+          },
+        },
       },
-      projects: {}
+      projects: {},
     };
   }
 

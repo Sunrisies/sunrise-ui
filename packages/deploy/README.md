@@ -43,6 +43,11 @@ sunrise-deploy -c /path/to/deploy.config.json
     "zip": "dist.zip",
     "buildCommand": "npm run build",
     "steps": {
+      "gitCommit": {
+        "enabled": false,
+        "message": "chore: auto commit before deploy",
+        "description": "自动提交本地变更"
+      },
       "backup": {
         "enabled": true,
         "command": "cd $REMOTE && cp -r dist dist.backup",
@@ -91,9 +96,37 @@ sunrise-deploy -c /path/to/deploy.config.json
   - `local`: 本地路径
   - `steps.extract`: 解压步骤配置
 
+### Git 自动提交功能
+
+工具支持在部署前自动提交本地变更，便于后续回滚：
+
+- `gitCommit.enabled`: 是否启用自动提交（默认为 false）
+- `gitCommit.message`: 自定义提交信息，支持变量替换
+- `gitCommit.description`: 步骤描述
+
+**注意事项：**
+
+- 仅在项目是 git 仓库时才会执行提交
+- 如果没有未提交的变更，会自动跳过
+- 提交失败不会中断部署流程
+- 建议在生产环境部署前手动确认变更
+
+**启用示例：**
+
+```json
+{
+  "gitCommit": {
+    "enabled": true,
+    "message": "chore: auto commit before deploy - ${version}",
+    "description": "自动提交本地变更"
+  }
+}
+```
+
 ### 变量替换
 
 在命令中可以使用以下变量：
+
 - `$SERVER`: 服务器地址
 - `$REMOTE`: 远程路径
 - `$ZIP`: 压缩文件名
@@ -120,11 +153,75 @@ sunrise-deploy -c /path/to/deploy.config.json
 
 部署流程包含以下步骤：
 
-1. 远程备份（可选）
-2. 本地构建
-3. 文件压缩
-4. 文件上传
-5. 远程解压和清理
+1. 本地构建（可选）
+2. 版本自动更新（可选）
+3. Git 自动提交（可选）
+4. 文件压缩（可选）
+5. 文件上传到临时目录（可选）
+6. 远程备份当前线上版本（可选）
+7. 原子切换版本（可选）
+
+**版本管理说明：**
+
+- 版本更新在构建成功后执行
+- 如果后续步骤失败，会自动回退版本
+- 支持 major/minor/patch 三种版本类型
+- 回退功能确保部署失败时版本一致性
+
+## 开发
+
+### 功能特性
+
+#### 1. Git 自动提交
+
+在部署前自动提交本地变更，便于后续回滚：
+
+- 自动检测 git 仓库
+- 智能跳过无变更的情况
+- 提交失败不影响部署流程
+- **版本号自动包含** - commit 信息中自动包含版本号
+
+**提交信息示例：**
+
+```
+chore: auto commit before deploy - v1.0.1
+```
+
+如果启用了版本更新，commit 信息会自动包含新版本号，便于追踪每次部署的版本变更。
+
+#### 2. 版本自动管理
+
+自动更新 package.json 版本号，支持回退：
+
+- **版本类型**: major/minor/patch
+- **自动回退**: 部署失败时自动恢复原版本
+- **版本信息**: 可在提交信息中使用新版本号
+
+**配置示例：**
+
+```json
+{
+  "versionUpdate": {
+    "enabled": true,
+    "type": "patch",
+    "description": "自动更新 package.json 版本"
+  }
+}
+```
+
+**部署流程中的版本管理：**
+
+1. 构建成功后更新版本号
+2. 记录原始版本用于回退
+3. 后续步骤失败时自动回退
+4. 部署成功时显示新版本号
+
+**回退机制：**
+
+- 压缩失败 → 回退版本
+- 上传失败 → 回退版本
+- 切换版本失败 → 回退版本
+- 确保部署失败时代码库状态一致
 
 ## 开发
 

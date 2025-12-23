@@ -4,7 +4,17 @@ import * as path from "path";
 export interface DefaultConfig {
   zip: string;
   buildCommand: string;
+  versionUpdate: {
+    enabled: boolean;
+    type: "major" | "minor" | "patch";
+    description?: string;
+  };
   steps: {
+    gitCommit: {
+      enabled: boolean;
+      message?: string;
+      description?: string;
+    };
     backup: {
       enabled: boolean;
       command?: string;
