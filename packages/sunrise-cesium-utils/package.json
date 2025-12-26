@@ -1,46 +1,46 @@
 {
-    "name": "sunrise-cesium-utils",
-    "version": "1.0.1",
-    "description": "Cesium utility library for Sunrise UI",
-    "main": "dist/iife/index.js",
-    "module": "dist/esm/index.js",
-    "types": "dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/esm/index.js",
-            "require": "./dist/iife/index.js",
-            "browser": "./dist/iife/index.js"
-        }
-    },
-    "files": [
-        "dist",
-        "README.md"
-    ],
-    "scripts": {
-        "tsc": "tsc",
-        "dev": "tsup --watch",
-        "build": "tsup",
-        "push": "node publish.js"
-    },
-    "keywords": [
-        "cesium",
-        "3d",
-        "map",
-        "globe",
-        "utility",
-        "sunrise-cesium-utils"
-    ],
-    "author": "Sunrise UI Team",
-    "license": "MIT",
-    "peerDependencies": {
-        "cesium": "1.135.0"
-    },
-    "dependencies": {
-        "dexie": "4.2.1"
-    },
-    "devDependencies": {
-        "tsup": "8.5.1",
-        "typescript": "5.9.3"
+  "name": "sunrise-cesium-utils",
+  "version": "1.0.1",
+  "description": "Cesium utility library for Sunrise UI",
+  "main": "dist/iife/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/iife/index.js",
+      "browser": "./dist/iife/index.js"
     }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "tsc": "tsc",
+    "dev": "tsup --watch",
+    "build": "tsup",
+    "push": "node publish.js"
+  },
+  "keywords": [
+    "cesium",
+    "3d",
+    "map",
+    "globe",
+    "utility",
+    "sunrise-cesium-utils"
+  ],
+  "author": "Sunrise UI Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "cesium": "1.135.0"
+  },
+  "dependencies": {
+    "dexie": "4.2.1"
+  },
+  "devDependencies": {
+    "tsup": "8.5.1",
+    "typescript": "5.9.3"
+  }
 }

@@ -1,5 +1,6 @@
 
 import useLocalStore from './LocalStore'
+import { useTileCache } from './TileCache'
 import * as Cesium from 'cesium'
 
 type ResponseType = 'arraybuffer' | 'blob'
@@ -154,3 +155,6 @@ export const useCesiumCache = (
 }
 
 export default useCesiumCache
+
+// 导出瓦片缓存工具
+export { useTileCache }

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Guides</title>
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v3.14.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.14.0/mapbox-gl.js"></script>
+    <!-- <script src="https://unpkg.com/@zumer/snapdom/dist/snapdom.js"></script> -->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+
+      button {
+        position: absolute;
+        top: 80px;
+        right: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script src="../dist/iife/index.js"></script>
+    <div id="map"></div>
+    <button id="btn">下载</button>
+    <script type="module">
+      const { useTileCache } = SunriseCesiumUtils;
+      import { snapdom } from "https://unpkg.com/@zumer/snapdom/dist/snapdom.mjs";
+      // TO MAKE THE MAP APPEAR YOU MUST
+      // ADD YOUR ACCESS TOKEN FROM
+      // https://account.mapbox.com
+      mapboxgl.accessToken =
+        "pk.eyJ1IjoiaGp4MjAyMyIsImEiOiJjbWVjM204amcwcXZmMmxxdjJoM3YyZ2thIn0.2IfWn0uOrPr6KmxfEvU6hw";
+      // const map = new mapboxgl.Map({
+      //     container: 'map',
+      //     style: 'mapbox://styles/mapbox/satellite-streets-v11', // Use the standard style for the map
+      //     zoom: 12, // initial zoom level, 0 is the world view, higher values zoom in
+      //     center: [120.06022, 30.37818],
+      //     transformRequest: (e) => {
+      //         console.log(e, 'gasdgjasdgjkasghj')
+      //     },
+      //     preserveDrawingBuffer: true // 这个需要开启，才能获取正确的base64
+      // });
+      // 1. 初始化 IndexedDB
+      function initDB() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open("MapboxCacheDB", 1);
+
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => resolve(request.result);
+
+          request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains("tiles")) {
+              db.createObjectStore("tiles", { keyPath: "url" });
+            }
+          };
+        });
+      }
+
+      // 2. 计算缓存大小
+      async function getCacheSize() {
+        const ss = await tileCache.getCacheStats();
+        console.log(ss, "as=sa=as=as=as=sa==a");
+        // const db = await initDB();
+        // return new Promise((resolve, reject) => {
+        //   const transaction = db.transaction(["tiles"], "readonly");
+        //   const store = transaction.objectStore("tiles");
+        //   let totalSize = 0;
+        //   let count = 0;
+
+        //   const request = store.openCursor();
+        //   request.onsuccess = (event) => {
+        //     const cursor = event.target.result;
+        //     if (cursor) {
+        //       const data = cursor.value.data;
+        //       if (data instanceof ArrayBuffer) {
+        //         totalSize += data.byteLength;
+        //       } else if (typeof data === "string") {
+        //         totalSize += new Blob([data]).size;
+        //       }
+        //       count++;
+        //       cursor.continue();
+        //     } else {
+        //       const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
+        //       console.log(`缓存统计:`, {
+        //         条目数量: count,
+        //         总大小: `${sizeInMB} MB`,
+        //         字节数: totalSize,
+        //       });
+        //       resolve({ count, size: totalSize, sizeInMB });
+        //     }
+        //   };
+        //   request.onerror = () => reject(request.error);
+        // });
+      }
+
+      // 3. 缓存资源
+      async function cacheResource(url, data) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(["tiles"], "readwrite");
+          const store = transaction.objectStore("tiles");
+          const request = store.put({ url, data, timestamp: Date.now() });
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => {
+            // 每次缓存后打印当前缓存大小
+            getCacheSize();
+            resolve();
+          };
+        });
+      }
+
+      // 4. 获取缓存资源
+      async function getCachedResource(url) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(["tiles"], "readonly");
+          const store = transaction.objectStore("tiles");
+          const request = store.get(url);
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => {
+            if (request.result) {
+              console.log(`从缓存加载: ${url}`);
+              resolve(request.result.data);
+            } else {
+              resolve(null);
+            }
+          };
+        });
+      }
+
+      // 5. 创建地图实例 - 两种方式都支持缓存
+
+      // 方式一：使用 transformRequest（标准 Mapbox 图源）
+      const map = new mapboxgl.Map({
+        container: "map",
+        // style: 'mapbox://styles/mapbox/satellite-streets-v11',
+        zoom: 12,
+        center: [120.06022, 30.37818],
+        preserveDrawingBuffer: true,
+        zoom: 12, // initial zoom level, 0 is the world view, higher values zoom in
+        center: [120.06022, 30.37818],
+        // transformRequest:
+        //     (url, resourceType) => {
+        //         // console.log(url, resourceType)
+        //         if (resourceType === 'Tile') {
+        //             // 返回一个 Promise
+        //             return new Promise(async (resolve, reject) => {
+        //                 const cachedData = await getCachedResource(url);
+        //                 if (cachedData) {
+        //                     console.log(`从缓存加载瓦片: `);
+        //                     // 将 ArrayBuffer 转换回 Blob，然后创建 ImageBitmap
+        //                     const blob = new Blob([cachedData], { type: 'image/png' });
+        //                     resolve(createImageBitmap(blob));
+        //                 }
+        //                 console.log(url, '=========')
+        //                 // 缓存未命中，从网络获取
+        //                 const response = await fetch(url);
+
+        //                 if (!response.ok) {
+        //                     throw new Error(`Failed to load tile `);
+        //                 }
+
+        //                 const imageBlob = await response.blob();
+        //                 console.log(imageBlob, 'imageBlob')
+        //                 // 缓存新获取的数据
+        //                 const arrayBuffer = await imageBlob.arrayBuffer();
+        //                 await cacheResource(url, arrayBuffer);
+        //                 console.log(`从网络加载并缓存瓦片:`);
+
+        //                 resolve(createImageBitmap(imageBlob));
+        //                 // getCachedResource(url)
+        //                 //     .then(cachedData => {
+        //                 //         if (cachedData) {
+        //                 //             return new Response(cachedData);
+        //                 //         }
+        //                 //         return fetch(url);
+        //                 //     })
+        //                 //     .then(response => {
+        //                 //         if (!response.ok) throw new Error('Network response was not ok');
+        //                 //         return response.arrayBuffer();
+        //                 //     })
+        //                 //     .then(data => {
+        //                 //         cacheResource(url, data);
+        //                 //         console.log(`从网络加载并缓存: ${url}`);
+        //                 //         return new Response(data);
+        //                 //     })
+        //                 //     .catch(error => {
+        //                 //         console.error('加载资源失败:', error);
+        //                 //         throw error;
+        //                 //     });
+
+        //             })
+        //         }
+
+        //         // return { url };
+        //     }
+      });
+      const customSourceImplementation = {
+        id: "my-custom-source",
+        type: "custom",
+        tileSize: 512,
+        minzoom: 0,
+        maxzoom: 18,
+
+        async loadTile(tileID, { signal }) {
+          const { z, x, y } = tileID;
+          const url = `http://hg.ciwwi.cn/vt/lyrs=s,h&hl=zh-CN&gl=zh-CN&src=app&x=${x}&y=${y}&z=${z}&s={$Galileo}&scale=1`;
+
+          // 先检查缓存
+          const cachedData = await getCachedResource(url);
+          if (cachedData) {
+            console.log(`从缓存加载瓦片: ${z}/${x}/${y}`);
+            // 将 ArrayBuffer 转换回 Blob，然后创建 ImageBitmap
+            const blob = new Blob([cachedData], { type: "image/png" });
+            return createImageBitmap(blob);
+          }
+
+          // 缓存未命中，从网络获取
+          const response = await fetch(url, { signal });
+
+          if (!response.ok) {
+            throw new Error(`Failed to load tile ${z}/${x}/${y}`);
+          }
+
+          const imageBlob = await response.blob();
+
+          // 缓存新获取的数据
+          const arrayBuffer = await imageBlob.arrayBuffer();
+          await cacheResource(url, arrayBuffer);
+          console.log(`从网络加载并缓存瓦片: ${z}/${x}/${y}`);
+
+          return createImageBitmap(imageBlob);
+        },
+
+        unloadTile(tileID) {
+          console.log(`Unloading tile ${tileID.z}/${tileID.x}/${tileID.y}`);
+        },
+
+        onAdd(map) {
+          console.log("Custom source added to map");
+        },
+
+        onRemove(map) {
+          console.log("Custom source removed from map");
+        },
+      };
+      const tileCache = useTileCache({
+        dbName: "mapbox",
+        debug: true,
+        //   types: ,
+      });
+      const customSource = tileCache.createCustomSource();
+      // 6. 地图加载完成后打印初始缓存大小
+      map.on("load", () => {
+        console.log("地图加载完成");
+        map.addSource(
+          "raster-tiles",
+          customSource
+          //   customSourceImplementation
+          //  {
+          //     type: 'raster',
+          //     tiles: ['http://hg.ciwwi.cn/vt/lyrs=s,h&hl=zh-CN&gl=zh-CN&src=app&x={x}&y={y}&z={z}&s={$Galileo}&scale=1'],
+          //     //
+          //     // tiles: ['http://39.105.184.238:8895/fourcitiestiles/{z}/{x}/{y}.png'],
+          //     // tiles: ['http://tblbl.xworld.work/maps/vt/lyrs=s&src=app&x={x}&y={y}&z={z}&s={$Galileo}&scale=2'],
+          //     // tiles: ['/newMap/maps/vt?lyrs=s%40781&hl=zh-CN&gI=CN&x={x}&y={y}&z={z}'],
+          //     // tiles: ['/map/fly?type=g&lyrs=s,h@955000822&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}&scale=2'],
+          //     tileSize: 256
+          // }
+        );
+        map.addLayer({
+          id: "raster-tiles",
+          type: "raster",
+          source: "raster-tiles",
+          minzoom: 0,
+          maxzoom: 22,
+        });
+        getCacheSize();
+      });
+
+      // 7. 定期打印缓存大小（可选）
+      setInterval(getCacheSize, 1000); // 每分钟打印一次
+
+      // 8. 保存地图当前视图
+      async function saveMapView() {
+        const canvas = map.getCanvas();
+        const snapshot = canvas.toDataURL();
+        const db = await initDB();
+
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(["tiles"], "readwrite");
+          const store = transaction.objectStore("tiles");
+          const viewData = {
+            url: "current_view",
+            data: snapshot,
+            center: map.getCenter(),
+            zoom: map.getZoom(),
+            timestamp: Date.now(),
+          };
+          const request = store.put(viewData);
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => {
+            console.log("地图视图已保存");
+            getCacheSize();
+            resolve();
+          };
+        });
+      }
+
+      // 9. 定期保存当前视图（可选）
+      // setInterval(saveMapView, 5 * 60 * 1000); // 每5分钟保存一次
+
+      document.getElementById("btn").addEventListener("click", handleDownload);
+      async function handleDownload() {
+        // 下载
+        const cesiumCanvas = document.querySelector(".mapboxgl-canvas");
+        // 使用 snapdom 截取整个页面或指定区域
+        const screenshot = await snapdom(cesiumCanvas);
+        console.log(screenshot, "screenshot");
+        // 创建下载链接
+        screenshot.download();
+      }
+      // 渲染点位
+      // map.on('load', () => {
+      //     map.addSource('points', {
+      //         'type': 'geojson',
+      //         'data': {
+      //             'type': 'FeatureCollection',
+      //             'features': [{
+      //                 'type': 'Feature',
+      //                 'geometry': {
+      //                     'type': 'Point',
+      //                     'coordinates': [120.06022, 30.37818]
+      //                 }
+      //             }]
+      //         }
+      //     });
+      //     map.addLayer({
+      //         'id': 'points',
+      //         'type': 'circle',
+      //         'source': 'points',
+      //         'paint': {
+      //             'circle-radius': 10,
+      //             'circle-color': '#B42222'
+      //         }
+      //     });
+      // });
+      // map.addControl(new mapboxgl.NavigationControl());
+      // map.scrollZoom.disable();
+
+      // map.on('style.load', () => {
+      //     map.setFog({}); // Set the default atmosphere style
+      // });
+    </script>
+  </body>
+</html>
