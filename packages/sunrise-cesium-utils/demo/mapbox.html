@@ -214,7 +214,7 @@
       });
       const customSourceImplementation = {
         id: "my-custom-source",
-        type: "custom",
+        type: "raster",
         tileSize: 512,
         minzoom: 0,
         maxzoom: 18,
@@ -266,14 +266,14 @@
         debug: true,
         //   types: ,
       });
-      const customSource = tileCache.createCustomSource();
+      const customSource = tileCache.createRasterSource();
       // 6. 地图加载完成后打印初始缓存大小
       map.on("load", () => {
         console.log("地图加载完成");
         map.addSource(
           "raster-tiles",
-          customSource
-          //   customSourceImplementation
+          //   customSource
+          customSourceImplementation
           //  {
           //     type: 'raster',
           //     tiles: ['http://hg.ciwwi.cn/vt/lyrs=s,h&hl=zh-CN&gl=zh-CN&src=app&x={x}&y={y}&z={z}&s={$Galileo}&scale=1'],

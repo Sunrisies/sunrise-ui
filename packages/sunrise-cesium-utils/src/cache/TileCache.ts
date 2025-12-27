@@ -1,5 +1,21 @@
-import useLocalStore from './LocalStore';
-
+import useLocalStore from "./LocalStore";
+interface CustomSourceInterface<T> {
+  id: string;
+  type: "custom";
+  dataType: "raster";
+  minzoom?: number;
+  maxzoom?: number;
+  scheme?: string;
+  tileSize?: number;
+  attribution?: string;
+  bounds?: [number, number, number, number];
+  hasTile?: (tileID: TileID) => boolean;
+  loadTile: (tileID: TileID, options: { signal: AbortSignal }) => Promise<T>;
+  prepareTile?: (tileID: TileID) => T | undefined;
+  unloadTile?: (tileID: TileID) => void;
+  onAdd?: (map: Map) => void;
+  onRemove?: (map: Map) => void;
+}
 /**
  * 瓦片缓存配置接口
  * @public
@@ -53,12 +69,12 @@ export interface TileID {
  */
 export const useTileCache = (config: TileCacheConfig = {}) => {
   const {
-    dbName = 'TileCacheDB',
-    urlTemplate = 'http://hg.ciwwi.cn/vt/lyrs=s,h&hl=zh-CN&gl=zh-CN&src=app&x={x}&y={y}&z={z}&s={Galileo}&scale=1',
+    dbName = "TileCacheDB",
+    urlTemplate = "http://hg.ciwwi.cn/vt/lyrs=s,h&hl=zh-CN&gl=zh-CN&src=app&x={x}&y={y}&z={z}&s={Galileo}&scale=1",
     maxzoom = 18,
     minzoom = 0,
     tileSize = 512,
-    debug = false
+    debug = false,
   } = config;
 
   // 创建本地存储实例 (IndexedDB)
@@ -72,10 +88,10 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
   const getTileUrl = (tileID: TileID): string => {
     const { z, x, y } = tileID;
     return urlTemplate
-      .replace('{z}', String(z))
-      .replace('{x}', String(x))
-      .replace('{y}', String(y))
-      .replace('{Galileo}', String(Math.floor(Math.random() * 1000)));
+      .replace("{z}", String(z))
+      .replace("{x}", String(x))
+      .replace("{y}", String(y))
+      .replace("{Galileo}", String(Math.floor(Math.random() * 1000)));
   };
 
   /**
@@ -84,20 +100,25 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
    * @param options 请求选项
    * @returns ImageBitmap对象
    */
-  const loadTile = async (tileID: TileID, options: { signal?: AbortSignal } = {}): Promise<ImageBitmap> => {
+  const loadTile = async (
+    tileID: TileID,
+    options: { signal: AbortSignal } = { signal: new AbortController().signal }
+  ): Promise<ImageBitmap> => {
     const url = getTileUrl(tileID);
 
     // 先检查缓存
     const cachedData = await localStore.getCacheByKey(url);
     if (cachedData) {
       if (debug) {
-        console.log(`[TileCache] 从缓存加载瓦片: ${tileID.z}/${tileID.x}/${tileID.y}`);
+        console.log(
+          `[TileCache] 从缓存加载瓦片: ${tileID.z}/${tileID.x}/${tileID.y}`
+        );
       }
       // 将 ArrayBuffer 或 Blob 转换为 ImageBitmap
       if (cachedData instanceof Blob) {
         return createImageBitmap(cachedData);
       } else if (cachedData instanceof ArrayBuffer) {
-        const blob = new Blob([cachedData], { type: 'image/png' });
+        const blob = new Blob([cachedData], { type: "image/png" });
         return createImageBitmap(blob);
       } else if (cachedData instanceof ImageBitmap) {
         return cachedData;
@@ -108,7 +129,9 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
     try {
       const response = await fetch(url, { signal: options.signal });
       if (!response.ok) {
-        throw new Error(`Failed to load tile ${tileID.z}/${tileID.x}/${tileID.y}`);
+        throw new Error(
+          `Failed to load tile ${tileID.z}/${tileID.x}/${tileID.y}`
+        );
       }
 
       const imageBlob = await response.blob();
@@ -117,19 +140,26 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
       await localStore.setCacheToLocal(url, imageBlob);
 
       if (debug) {
-        console.log(`[TileCache] 从网络加载并缓存瓦片: ${tileID.z}/${tileID.x}/${tileID.y}`);
+        console.log(
+          `[TileCache] 从网络加载并缓存瓦片: ${tileID.z}/${tileID.x}/${tileID.y}`
+        );
       }
 
       return createImageBitmap(imageBlob);
     } catch (error) {
       // 如果是中止错误，不记录为错误，因为这是正常行为
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && error.name === "AbortError") {
         if (debug) {
-          console.log(`[TileCache] 瓦片加载被中止: ${tileID.z}/${tileID.x}/${tileID.y}`);
+          console.log(
+            `[TileCache] 瓦片加载被中止: ${tileID.z}/${tileID.x}/${tileID.y}`
+          );
         }
         return Promise.reject(error); // 继续传递中止错误
       }
-      console.error(`[TileCache] 加载瓦片失败: ${tileID.z}/${tileID.x}/${tileID.y}`, error);
+      console.error(
+        `[TileCache] 加载瓦片失败: ${tileID.z}/${tileID.x}/${tileID.y}`,
+        error
+      );
       throw error;
     }
   };
@@ -140,7 +170,9 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
    */
   const unloadTile = (tileID: TileID): void => {
     if (debug) {
-      console.log(`[TileCache] Unloading tile ${tileID.z}/${tileID.x}/${tileID.y}`);
+      console.log(
+        `[TileCache] Unloading tile ${tileID.z}/${tileID.x}/${tileID.y}`
+      );
     }
   };
 
@@ -152,18 +184,18 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
     const sizeStr = await localStore.getCacheSize();
     // 解析大小字符串获取字节数
     let sizeInBytes = 0;
-    if (sizeStr.includes('MB')) {
+    if (sizeStr.includes("MB")) {
       sizeInBytes = parseFloat(sizeStr) * 1024 * 1024;
-    } else if (sizeStr.includes('KB')) {
+    } else if (sizeStr.includes("KB")) {
       sizeInBytes = parseFloat(sizeStr) * 1024;
-    } else if (sizeStr.includes('B')) {
+    } else if (sizeStr.includes("B")) {
       sizeInBytes = parseFloat(sizeStr);
     }
 
     return {
       count: 0, // LocalStore 不直接提供计数，需要扩展
       size: sizeInBytes,
-      sizeInMB: sizeStr
+      sizeInMB: sizeStr,
     };
   };
 
@@ -173,7 +205,7 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
   const clearCache = async (): Promise<void> => {
     await localStore.clearCache();
     if (debug) {
-      console.log('[TileCache] 缓存已清除');
+      console.log("[TileCache] 缓存已清除");
     }
   };
 
@@ -181,10 +213,12 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
    * 创建自定义地图源实现
    * @returns 地图源对象
    */
-  const createCustomSource = () => {
+  const createRasterSource = <
+    ImageBitmap
+  >(): CustomSourceInterface<ImageBitmap> => {
     return {
-      id: 'custom-tile-source',
-      type: 'custom',
+      id: "custom-tile-source",
+      type: "custom",
       tileSize,
       minzoom,
       maxzoom,
@@ -192,14 +226,14 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
       unloadTile,
       onAdd(map: any) {
         if (debug) {
-          console.log('[TileCache] Custom source added to map');
+          console.log("[TileCache] Custom source added to map");
         }
       },
       onRemove(map: any) {
         if (debug) {
-          console.log('[TileCache] Custom source removed from map');
+          console.log("[TileCache] Custom source removed from map");
         }
-      }
+      },
     };
   };
 
@@ -208,8 +242,8 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
     unloadTile,
     getCacheStats,
     clearCache,
-    createCustomSource,
-    getTileUrl
+    createRasterSource,
+    getTileUrl,
   };
 };
 
