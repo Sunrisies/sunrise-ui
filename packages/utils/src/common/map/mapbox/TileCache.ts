@@ -1,5 +1,6 @@
-import useLocalStore from "./LocalStore";
-interface CustomSourceInterface<T> {
+import useLocalStore from "../../localStore";
+import type { Map } from "mapbox-gl";
+interface CustomSourceInterface<T = ImageBitmap> {
   id: string;
   type: "custom";
   dataType: "raster";
@@ -70,7 +71,7 @@ export interface TileID {
 export const useTileCache = (config: TileCacheConfig = {}) => {
   const {
     dbName = "TileCacheDB",
-    urlTemplate = "http://hg.ciwwi.cn/vt/lyrs=s,h&hl=zh-CN&gl=zh-CN&src=app&x={x}&y={y}&z={z}&s={Galileo}&scale=1",
+    urlTemplate = "",
     maxzoom = 18,
     minzoom = 0,
     tileSize = 512,
@@ -90,8 +91,8 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
     return urlTemplate
       .replace("{z}", String(z))
       .replace("{x}", String(x))
-      .replace("{y}", String(y))
-      .replace("{Galileo}", String(Math.floor(Math.random() * 1000)));
+      .replace("{y}", String(y));
+    // .replace("{Galileo}", String(Math.floor(Math.random() * 1000)));
   };
 
   /**
@@ -104,6 +105,7 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
     tileID: TileID,
     options: { signal: AbortSignal } = { signal: new AbortController().signal }
   ): Promise<ImageBitmap> => {
+    console.log("loadTile", tileID);
     const url = getTileUrl(tileID);
 
     // 先检查缓存
@@ -213,12 +215,11 @@ export const useTileCache = (config: TileCacheConfig = {}) => {
    * 创建自定义地图源实现
    * @returns 地图源对象
    */
-  const createRasterSource = <
-    ImageBitmap
-  >(): CustomSourceInterface<ImageBitmap> => {
+  const createRasterSource = (): CustomSourceInterface<ImageBitmap> => {
     return {
       id: "custom-tile-source",
       type: "custom",
+      dataType: "raster",
       tileSize,
       minzoom,
       maxzoom,

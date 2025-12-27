@@ -6,3 +6,4 @@ export * from "./timer";
 export * from "./map/index";
 export * from "./validation";
 export * from "./crypto";
+export * from "./map";
