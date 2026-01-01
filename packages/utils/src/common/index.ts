@@ -7,3 +7,4 @@ export * from "./map/index";
 export * from "./validation";
 export * from "./crypto";
 export * from "./object";
+export * from "./map";
