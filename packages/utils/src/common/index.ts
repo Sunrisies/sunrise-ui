@@ -8,3 +8,4 @@ export * from "./validation";
 export * from "./crypto";
 export * from "./object";
 export * from "./map";
+export * from "./localStore";

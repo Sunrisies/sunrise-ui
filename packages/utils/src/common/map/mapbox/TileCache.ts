@@ -1,4 +1,4 @@
-import useLocalStore from "../../localStore";
+import { useLocalStore } from "../../localStore";
 import type { Map } from "mapbox-gl";
 interface CustomSourceInterface<T = ImageBitmap> {
   id: string;

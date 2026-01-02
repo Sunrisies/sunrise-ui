@@ -1,11 +1,11 @@
 import Dexie, { type EntityTable } from "dexie";
-interface Cache {
+export interface Cache {
   value: Blob | ArrayBuffer | ImageBitmap | null;
   key: string;
   id?: number;
 }
 
-interface Config {
+export interface Config {
   dbName: string;
 }
 
@@ -33,7 +33,7 @@ export const formatMemorySize = (size: number) => {
  * @author 朝阳
  * @version 1.0.0
  */
-export default (config: Config = { dbName: "LocalStore" }) => {
+export function useLocalStore(config: Config = { dbName: "LocalStore" }) {
   const { dbName = "LocalStore" } = config;
   const db = new Dexie(dbName) as Dexie & {
     cache: EntityTable<Cache, "key">;
@@ -98,4 +98,4 @@ export default (config: Config = { dbName: "LocalStore" }) => {
     clearCache,
     getCacheSize,
   };
-};
+}

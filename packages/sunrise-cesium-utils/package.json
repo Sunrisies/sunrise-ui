@@ -34,10 +34,8 @@
   "author": "Sunrise UI Team",
   "license": "MIT",
   "peerDependencies": {
-    "cesium": "1.135.0"
-  },
-  "dependencies": {
-    "dexie": "4.2.1"
+    "cesium": "1.135.0",
+    "sunrise-utils": "workspace:*"
   },
   "devDependencies": {
     "tsup": "8.5.1",

@@ -1,4 +1,4 @@
-import useLocalStore from "./LocalStore";
+import { useLocalStore } from "sunrise-utils";
 import * as Cesium from "cesium";
 
 type ResponseType = "arraybuffer" | "blob";
