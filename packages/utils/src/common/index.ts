@@ -9,3 +9,4 @@ export * from "./crypto";
 export * from "./object";
 export * from "./map";
 export * from "./localStore";
+export * from "./array";

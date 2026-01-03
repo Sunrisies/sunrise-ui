@@ -67,6 +67,9 @@ export interface TileID {
  * @public
  * @author 朝阳
  * @version 1.0.0
+ * @memberof module:map/useTileCache
+ *
+ * @func 瓦片缓存工具类，用于缓存地图瓦片资源
  */
 export const useTileCache = (config: TileCacheConfig = {}) => {
   const {
