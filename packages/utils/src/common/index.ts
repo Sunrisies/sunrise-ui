@@ -1,5 +1,6 @@
 export * from "./activity";
 export * from "./date";
+export * from "./date-enhanced";
 export * from "./format";
 export * from "./string";
 export * from "./timer";
