@@ -1,17 +1,13 @@
 {
   "name": "sunrise-cesium-utils",
-  "version": "1.0.3",
-  "description": "Cesium utility library for Sunrise UI",
+  "version": "1.0.4",
+  "description": "Cesium tool library",
   "main": "dist/iife/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/iife/index.js",
-      "browser": "./dist/iife/index.js"
-    }
+    "import": "./dist/esm/index.js",
+    "require": "./dist/iife/index.js"
   },
   "files": [
     "dist",
@@ -31,7 +27,11 @@
     "utility",
     "sunrise-cesium-utils"
   ],
-  "author": "Sunrise UI Team",
+  "author": "sunrise",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/Sunrisies/sunrsie-ui.git"
+  },
   "license": "MIT",
   "peerDependencies": {
     "cesium": "1.135.0",
@@ -40,5 +40,8 @@
   "devDependencies": {
     "tsup": "8.5.1",
     "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "@swc/core": "^1.15.30"
   }
 }

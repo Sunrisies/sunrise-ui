@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ESNext", // 使用最新的 ECMAScript 标准  
-    "module": "ESNext", // 使用最新的 ECMAScript 模块系统  
+    "module": "nodenext", // 使用最新的 ECMAScript 模块系统  
     "strict": true, // 启用所有严格类型检查选项  
     "jsx": "react", // 如果您使用 JSX，则设置为 "react"  
     "declaration": true, // 如果您想要生成类型声明文件，则启用此选项  
@@ -10,7 +10,7 @@
     "outDir": "./temp", // 输出的目录  
     "rootDir": "./src", // TypeScript 文件的根目录  
     "declarationDir": "./types", // 类型声明文件的输出目录  
-    "moduleResolution": "node", // 使用 Node.js 风格的模块解析  
+    "moduleResolution": "NodeNext", // 使用 Node.js 风格的模块解析  
     "lib": [
       "esnext",
       "dom",
