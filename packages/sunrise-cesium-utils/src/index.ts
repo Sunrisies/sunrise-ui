@@ -12,17 +12,17 @@
  * - 模型操作
  */
 
-import CameraUtils from "./camera";
-import CoordinateUtils from "./coordinate";
-import ScreenUtils from "./screen";
-import ModelUtils from "./model";
-import { useCesiumCache } from "./cache";
+import CameraUtils from "./camera/index.js";
+import CoordinateUtils from "./coordinate/index.js";
+import ScreenUtils from "./screen/index.js";
+import ModelUtils from "./model/index.js";
+import { useCesiumCache } from "./cache/index.js";
 // 导出所有工具类
-export { CameraUtils } from "./camera";
-export { CoordinateUtils } from "./coordinate";
-export { ScreenUtils } from "./screen";
-export { ModelUtils } from "./model";
-export { useCesiumCache } from "./cache";
+export { CameraUtils } from "./camera/index.js";
+export { CoordinateUtils } from "./coordinate/index.js";
+export { ScreenUtils } from "./screen/index.js";
+export { ModelUtils } from "./model/index.js";
+export { useCesiumCache } from "./cache/index.js";
 
 // 导出类型
 export type {
@@ -30,7 +30,7 @@ export type {
   FindModelByIdType,
   LonLatCoordinate,
   FlyToOptions,
-} from "./types";
+} from "./types/index.js";
 
 // 默认导出所有工具
 export default {

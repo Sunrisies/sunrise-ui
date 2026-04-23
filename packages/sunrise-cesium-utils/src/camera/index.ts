@@ -1,5 +1,5 @@
 import { Cartesian3, Rectangle, Viewer } from "cesium";
-import type { FlyToOptions } from "../types";
+import type { FlyToOptions } from "../types/index.js";
 import * as Cesium from "cesium";
 
 /**
@@ -52,7 +52,7 @@ export class CameraUtils {
   static flyTo(
     viewer: Viewer,
     position: Cartesian3 | Rectangle,
-    options: Partial<FlyToOptions> = {}
+    options: Partial<FlyToOptions> = {},
   ): void {
     const { duration = 3, complete, cancel } = options;
 
@@ -98,7 +98,7 @@ export class CameraUtils {
     longitude: number,
     latitude: number,
     height: number = 1000,
-    options: Partial<FlyToOptions> = {}
+    options: Partial<FlyToOptions> = {},
   ): void {
     const position = Cartesian3.fromDegrees(longitude, latitude, height);
     this.flyTo(viewer, position, options);

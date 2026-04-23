@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ESNext", // 使用最新的 ECMAScript 标准  
+    "target": "esnext", // 使用最新的 ECMAScript 标准  
     "module": "nodenext", // 使用最新的 ECMAScript 模块系统  
     "strict": true, // 启用所有严格类型检查选项  
     "jsx": "react", // 如果您使用 JSX，则设置为 "react"  

@@ -7,7 +7,7 @@ import {
   SceneTransforms,
   Cartesian3,
 } from "cesium";
-import type { LonLatCoordinate } from "../types";
+import type { LonLatCoordinate } from "../types/index.js";
 
 /**
  * 屏幕坐标工具类
@@ -55,7 +55,7 @@ export class ScreenUtils {
    */
   static screenToLonLat(
     viewer: Viewer,
-    position: Cartesian2
+    position: Cartesian2,
   ): LonLatCoordinate | null {
     const ray = viewer.camera.getPickRay(position);
 
@@ -107,7 +107,7 @@ export class ScreenUtils {
     viewer: Viewer,
     longitude: number,
     latitude: number,
-    height: number = 0
+    height: number = 0,
   ): Cartesian2 | null {
     try {
       // 将经纬度转换为笛卡尔坐标
@@ -117,7 +117,7 @@ export class ScreenUtils {
       // 这个方法会考虑相机的视图矩阵和投影矩阵
       const screenPosition = SceneTransforms.worldToWindowCoordinates(
         viewer.scene,
-        cartesian
+        cartesian,
       );
 
       if (!screenPosition) {
@@ -170,12 +170,12 @@ export class ScreenUtils {
    */
   static worldToScreen(
     viewer: Viewer,
-    worldPosition: Cartesian3
+    worldPosition: Cartesian3,
   ): Cartesian2 | null {
     try {
       const screenPosition = SceneTransforms.worldToWindowCoordinates(
         viewer.scene,
-        worldPosition
+        worldPosition,
       );
 
       if (!screenPosition) {
@@ -226,7 +226,7 @@ export class ScreenUtils {
    */
   static getEarthPosition(
     viewer: Viewer,
-    mousePosition: Cartesian2
+    mousePosition: Cartesian2,
   ): Cartesian3 | undefined {
     const ray = viewer.camera.getPickRay(mousePosition);
 
@@ -262,7 +262,7 @@ export class ScreenUtils {
    */
   static pickEntity(
     viewer: Viewer,
-    mousePosition: Cartesian2
+    mousePosition: Cartesian2,
   ): any | undefined {
     const picked = viewer.scene.pick(mousePosition);
     return picked?.id;

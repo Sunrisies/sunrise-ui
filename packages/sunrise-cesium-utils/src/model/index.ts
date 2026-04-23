@@ -7,7 +7,10 @@ import {
   Transforms,
   Viewer,
 } from "cesium";
-import type { CalculateLocationType, FindModelByIdType } from "../types";
+import type {
+  CalculateLocationType,
+  FindModelByIdType,
+} from "../types/index.js";
 
 /**
  * 模型工具类
@@ -80,7 +83,7 @@ export class ModelUtils {
       throw new Error(
         `计算位置矩阵失败: ${
           error instanceof Error ? error.message : "未知错误"
-        }`
+        }`,
       );
     }
   }

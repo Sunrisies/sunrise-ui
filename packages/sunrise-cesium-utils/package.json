@@ -1,6 +1,7 @@
 {
   "name": "sunrise-cesium-utils",
-  "version": "1.0.4",
+  "version": "1.0.5",
+  "type": "module",
   "description": "Cesium tool library",
   "main": "dist/iife/index.js",
   "module": "dist/esm/index.js",
@@ -35,13 +36,14 @@
   "license": "MIT",
   "peerDependencies": {
     "cesium": "1.135.0",
-    "sunrise-utils": "workspace:*"
+    "sunrise-utils": "^1.0.38"
   },
   "devDependencies": {
     "tsup": "8.5.1",
     "typescript": "5.9.3"
   },
   "dependencies": {
-    "@swc/core": "^1.15.30"
+    "@swc/core": "^1.15.30",
+    "@types/node": "^25.6.0"
   }
 }

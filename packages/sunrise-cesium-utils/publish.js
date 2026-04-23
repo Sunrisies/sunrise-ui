@@ -1,20 +1,22 @@
 #!/usr/bin/env node
-const { exec } = require('child_process');
-const spawn = require('cross-spawn');
-const fs = require('fs');
-const path = require('path');
-
+import { exec } from "child_process";
+import spawn from "cross-spawn";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 // 获取当前版本号
 function getCurrentVersion() {
-  const packageJsonPath = path.join(__dirname, 'package.json');
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+  const packageJsonPath = path.join(__dirname, "package.json");
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
   return packageJson.version;
 }
 
 // 设置版本号
 function setVersion(version) {
-  const packageJsonPath = path.join(__dirname, 'package.json');
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+  const packageJsonPath = path.join(__dirname, "package.json");
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
   packageJson.version = version;
   fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 }
@@ -47,46 +49,51 @@ function main() {
   console.log(`当前版本号: ${previousVersion}`);
 
   // 更新版本号
-  runCommand('npm version patch --no-git-tag-version', (errorPatch) => {
+  runCommand("npm version patch --no-git-tag-version", (errorPatch) => {
     if (errorPatch) {
-      console.error('npm version patch 执行失败，跳过 npm publish。');
+      console.error("npm version patch 执行失败，跳过 npm publish。");
       return;
     }
 
     // 设置 npm 注册表
-    runCommand('npm config set registry=https://registry.npmjs.org/', (errorRegistry) => {
-      if (errorRegistry) {
-        console.error('npm config set registry 执行失败，跳过 npm publish。');
-        revertVersion(previousVersion); // 回退版本号
-        return;
-      }
-
-      // 检查 npm 注册表
-      runCommand('npm config get registry', (errorGetRegistry) => {
-        if (errorGetRegistry) {
-          console.error('npm config get registry 执行失败，跳过 npm publish。');
+    runCommand(
+      "npm config set registry=https://registry.npmjs.org/",
+      (errorRegistry) => {
+        if (errorRegistry) {
+          console.error("npm config set registry 执行失败，跳过 npm publish。");
           revertVersion(previousVersion); // 回退版本号
           return;
         }
 
-        // 发布包
-        const child = spawn('npm', ['publish'], { stdio: 'inherit' });
-        child.on('close', (res) => {
-          if (res === 0) {
-            console.log('上传成功');
-            // 切换回淘宝镜像
-            runCommand('npx nrm use taobao', (errorNrm) => {
-              if (errorNrm) {
-                console.error('npx nrm use taobao 执行失败');
-              }
-            });
-          } else {
-            console.log('上传失败');
+        // 检查 npm 注册表
+        runCommand("npm config get registry", (errorGetRegistry) => {
+          if (errorGetRegistry) {
+            console.error(
+              "npm config get registry 执行失败，跳过 npm publish。",
+            );
             revertVersion(previousVersion); // 回退版本号
+            return;
           }
+
+          // 发布包
+          const child = spawn("npm", ["publish"], { stdio: "inherit" });
+          child.on("close", (res) => {
+            if (res === 0) {
+              console.log("上传成功");
+              // 切换回淘宝镜像
+              runCommand("npx nrm use taobao", (errorNrm) => {
+                if (errorNrm) {
+                  console.error("npx nrm use taobao 执行失败");
+                }
+              });
+            } else {
+              console.log("上传失败");
+              revertVersion(previousVersion); // 回退版本号
+            }
+          });
         });
-      });
-    });
+      },
+    );
   });
 }
 

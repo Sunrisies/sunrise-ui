@@ -1,5 +1,5 @@
 import { Cartesian3, Cartographic, Math } from "cesium";
-import type { LonLatCoordinate } from "../types";
+import type { LonLatCoordinate } from "../types/index.js";
 
 /**
  * 坐标转换工具类
@@ -68,7 +68,7 @@ export class CoordinateUtils {
   static lonLatToCartesian(
     longitude: number,
     latitude: number,
-    height: number = 0
+    height: number = 0,
   ): Cartesian3 {
     return Cartesian3.fromDegrees(longitude, latitude, height);
   }

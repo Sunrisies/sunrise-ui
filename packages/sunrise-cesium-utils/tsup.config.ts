@@ -10,6 +10,7 @@ export default defineConfig({
   splitting: false,
   globalName: "SunriseCesiumUtils",
   injectStyle: true,
+  clean: true,
   // 为不同格式设置不同的输出文件名
   outExtension({ format }) {
     if (format === "iife") {
