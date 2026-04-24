@@ -11,14 +11,5 @@ export default defineConfig({
   globalName: "SunriseCesiumUtils",
   injectStyle: true,
   clean: true,
-  // 为不同格式设置不同的输出文件名
-  outExtension({ format }) {
-    if (format === "iife") {
-      return "[name].global";
-    } else if (format === "esm") {
-      return "[name].mjs";
-    }
-    return "[name]";
-  },
   legacyOutput: true,
 });

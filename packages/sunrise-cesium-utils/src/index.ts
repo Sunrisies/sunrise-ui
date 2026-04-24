@@ -17,12 +17,22 @@ import CoordinateUtils from "./coordinate/index.js";
 import ScreenUtils from "./screen/index.js";
 import ModelUtils from "./model/index.js";
 import { useCesiumCache } from "./cache/index.js";
+import { jumpToPositions } from "./view/index.js";
+import type {
+  JumpToPositionsOptions,
+  JumpToPositionsResult,
+} from "./view/index.js";
 // 导出所有工具类
 export { CameraUtils } from "./camera/index.js";
 export { CoordinateUtils } from "./coordinate/index.js";
 export { ScreenUtils } from "./screen/index.js";
 export { ModelUtils } from "./model/index.js";
 export { useCesiumCache } from "./cache/index.js";
+export { jumpToPositions } from "./view/index.js";
+export type {
+  JumpToPositionsOptions,
+  JumpToPositionsResult,
+} from "./view/index.js";
 
 // 导出类型
 export type {
@@ -39,4 +49,5 @@ export default {
   ScreenUtils,
   ModelUtils,
   useCesiumCache,
+  jumpToPositions,
 };
