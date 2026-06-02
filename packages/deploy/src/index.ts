@@ -45,7 +45,7 @@ async function main(): Promise<void> {
       `
       )
       .action(async (options) => {
-        const deployer = new Deployer(options?.config);
+        const deployer = new Deployer(packageJson.version, options?.config);
         await deployer.interactiveMode();
       });
 

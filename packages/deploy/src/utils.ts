@@ -306,9 +306,13 @@ export function getCurrentVersion(projectPath: string): string | null {
 /**
  * 显示标题
  */
-export function displayHeader(): void {
+export function displayHeader(toolVersion?: string): void {
   console.log(
     chalk.cyan(figlet.textSync("Sunrise Deploy", { horizontalLayout: "full" }))
   );
-  console.log(chalk.gray("自动化部署工具 - TypeScript版本\n"));
+  if (toolVersion) {
+    console.log(chalk.gray(`v${toolVersion} - 自动化部署工具\n`));
+  } else {
+    console.log(chalk.gray("自动化部署工具 - TypeScript版本\n"));
+  }
 }

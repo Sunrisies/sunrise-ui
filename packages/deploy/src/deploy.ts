@@ -16,8 +16,10 @@ import { ConfigManager } from "./config";
 export class Deployer {
   private configManager: ConfigManager;
   private currentProject: string;
+  private toolVersion: string;
 
-  constructor(configPath?: string) {
+  constructor(toolVersion: string, configPath?: string) {
+    this.toolVersion = toolVersion;
     this.configManager = new ConfigManager(configPath);
     this.currentProject = "";
   }
@@ -91,7 +93,7 @@ export class Deployer {
    * 执行部署
    */
   async deploy(): Promise<void> {
-    displayHeader();
+    displayHeader(this.toolVersion);
 
     // 选择项目
     this.currentProject = await this.configManager.selectProject();
@@ -103,10 +105,14 @@ export class Deployer {
     );
     console.log(chalk.gray(`服务器: ${projectConfig.server}`));
     console.log(chalk.gray(`远程路径: ${projectConfig.remote}`));
-    console.log(
-      chalk.gray(`本地路径: ${projectConfig.local}
-`)
-    );
+    console.log(chalk.gray(`本地路径: ${projectConfig.local}`));
+
+    // 显示当前版本号
+    const currentVersion = getCurrentVersion(projectConfig.local);
+    if (currentVersion) {
+      console.log(chalk.gray(`当前版本: ${chalk.green(currentVersion)}`));
+    }
+    console.log("");
 
     // 确认部署
     const { confirm } = await inquirer.prompt([
@@ -193,32 +199,7 @@ export class Deployer {
       }
     }
 
-    // ✅ Step 5: 上传到服务器临时位置（不影响当前线上版本）
-    if (projectConfig.steps.upload.enabled) {
-      const localZipPath = path.join(projectConfig.local, projectConfig.zip);
-      const remoteTempPath = `${projectConfig.remote}/temp/${projectConfig.zip}`;
-
-      // 先上传到临时目录
-      success = await executeCommand(
-        `ssh "${projectConfig.server}" "mkdir -p ${projectConfig.remote}/temp"`,
-        "创建临时目录"
-      );
-
-      success = await executeCommand(
-        `scp "${localZipPath}" "${projectConfig.server}:${remoteTempPath}"`,
-        projectConfig.steps.upload.description || "上传文件到临时目录"
-      );
-      if (!success) {
-        // 如果失败且版本已更新，回退版本
-        if (versionUpdateSuccess && originalVersion) {
-          console.log(chalk.yellow("⚠️ 上传失败，回退版本..."));
-          await revertPackageVersion(projectConfig.local, originalVersion);
-        }
-        return;
-      }
-    }
-
-    // ✅ Step 6: 远程备份当前线上版本（此时本地构建已成功）
+    // ✅ Step 5: 远程备份当前线上版本（先备份，再上传）
     if (projectConfig.steps.backup.enabled) {
       const command = replaceVariables(
         projectConfig.steps.backup.command || "",
@@ -230,25 +211,59 @@ export class Deployer {
         { silent: true }
       );
       if (!success) {
-        console.log(chalk.yellow("⚠️ 备份失败，但新版本已准备好"));
+        console.log(chalk.yellow("⚠️ 备份失败，但继续部署流程"));
         // 备份失败不影响后续流程
       }
     }
 
-    // ✅ Step 7: 切换版本（原子操作）
-    if (projectConfig.steps.extract.enabled) {
-      // 使用原子操作替换线上版本
-      const command = `cd ${projectConfig.remote}/temp && unzip ${projectConfig.remote}/temp/${projectConfig.zip} && mv ${projectConfig.remote}/temp/* ${projectConfig.remote}/dist && rm -rf ${projectConfig.remote}/temp`;
+    // ✅ Step 6: 上传文件到服务器
+    if (projectConfig.steps.upload.enabled) {
+      // 规范化 remote 路径，去除尾部斜杠
+      const remoteBase = projectConfig.remote.replace(/\/+$/, "");
+      const localZipPath = path.join(projectConfig.local, projectConfig.zip);
+      const remoteZipPath = `${remoteBase}/dist/${projectConfig.zip}`;
 
+      // 确保远端 dist 目录存在（备份步骤可能已创建）
+      const mkdirOk = await executeCommand(
+        `ssh "${projectConfig.server}" "mkdir -p ${remoteBase}/dist"`,
+        "创建远端目录"
+      );
+      if (!mkdirOk) {
+        console.log(chalk.red("❌ 创建远端目录失败，停止部署"));
+        if (versionUpdateSuccess && originalVersion) {
+          console.log(chalk.yellow("⚠️ 回退本地版本..."));
+          await revertPackageVersion(projectConfig.local, originalVersion);
+        }
+        return;
+      }
+
+      const uploadOk = await executeCommand(
+        `scp "${localZipPath}" "${projectConfig.server}:${remoteZipPath}"`,
+        projectConfig.steps.upload.description || "上传文件到服务器"
+      );
+      if (!uploadOk) {
+        if (versionUpdateSuccess && originalVersion) {
+          console.log(chalk.yellow("⚠️ 上传失败，回退版本..."));
+          await revertPackageVersion(projectConfig.local, originalVersion);
+        }
+        return;
+      }
+    }
+
+    // ✅ Step 7: 远程解压（使用项目配置的自定义命令）
+    if (projectConfig.steps.extract.enabled) {
+      const extractCommand = replaceVariables(
+        projectConfig.steps.extract.command || "",
+        projectConfig
+      );
       success = await executeCommand(
-        `ssh "${projectConfig.server}" "${command}"`,
-        "原子切换版本",
+        `ssh "${projectConfig.server}" "${extractCommand}"`,
+        projectConfig.steps.extract.description || "远程解压上传文件",
         { silent: true }
       );
       if (!success) {
         console.log(chalk.red("❌ 切换版本失败，请手动处理"));
 
-        // 关键步骤失败，回退本地版本
         if (versionUpdateSuccess && originalVersion) {
           console.log(chalk.yellow("⚠️ 自动回退本地版本..."));
           await revertPackageVersion(projectConfig.local, originalVersion);
@@ -257,6 +272,14 @@ export class Deployer {
         return;
       }
     }
+
+    // 删除远端压缩包
+    const cleanBase = projectConfig.remote.replace(/\/+$/, "");
+    await executeCommand(
+      `ssh "${projectConfig.server}" "rm -f ${cleanBase}/dist/${projectConfig.zip}"`,
+      "清理远端压缩包",
+      { silent: true }
+    );
 
     // 部署成功
     console.log(chalk.green("====== 发布完成 ======"));
@@ -307,7 +330,7 @@ export class Deployer {
    * 交互式模式
    */
   async interactiveMode(): Promise<void> {
-    displayHeader();
+    displayHeader(this.toolVersion);
 
     // 检查是否有项目配置
     const config = this.configManager.getConfig();
