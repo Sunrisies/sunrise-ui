@@ -2,49 +2,50 @@ import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
 import inquirer from "inquirer";
-import { DeployConfig, defaultConfigPath, deployDir } from "./types";
+import { DeployConfig, ProjectConfig, defaultConfigPath, deployDir } from "./types";
 
 export class ConfigManager {
   private config: DeployConfig;
   private configFilePath: string;
 
   constructor(configPath?: string) {
-    // 在用户主目录下创建一个deploy目录
-    if (!fs.existsSync(deployDir)) {
-      fs.mkdirSync(deployDir);
+    this.config = { projects: {} };
+    this.configFilePath = configPath || defaultConfigPath;
+
+    // 确保配置目录存在
+    const dir = path.dirname(this.configFilePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
-    this.config = {} as DeployConfig;
-    this.configFilePath = "";
-    this.loadConfig(configPath);
+
+    this.loadConfig();
   }
 
   /**
    * 加载配置文件
-   * @param configPath 配置文件路径
    */
-  private loadConfig(configPath?: string): void {
-    // 默认配置文件路径
-    this.configFilePath = configPath || defaultConfigPath;
-
+  private loadConfig(): void {
     try {
-      // 尝试加载配置文件
       if (fs.existsSync(this.configFilePath)) {
         const configContent = fs.readFileSync(this.configFilePath, "utf-8");
-        this.config = JSON.parse(configContent);
+        const raw = JSON.parse(configContent);
+
+        // 自动迁移旧格式（带 default 字段）
+        if (raw.default) {
+          this.config = this.migrateOldConfig(raw);
+          this.saveConfig();
+          console.log(chalk.green(`✅ 已自动迁移配置文件到新格式`));
+        } else {
+          this.config = raw;
+        }
+
         console.log(chalk.green(`✅ 已加载配置文件: ${this.configFilePath}`));
       } else {
         console.log(chalk.yellow(`⚠️ 配置文件不存在: ${this.configFilePath}`));
-        console.log(chalk.blue(`🔄 正在创建默认配置文件...`));
-
-        // 创建默认配置
-        this.config = this.createDefaultConfig();
-
-        // 保存默认配置到文件
+        console.log(chalk.blue(`🔄 正在创建空配置文件...`));
+        this.config = { projects: {} };
         this.saveConfig();
-        console.log(
-          chalk.green(`✅ 已创建默认配置文件: ${this.configFilePath}`)
-        );
-        console.log(chalk.yellow(`💡 请根据需要修改配置文件后再次运行`));
+        console.log(chalk.green(`✅ 已创建配置文件: ${this.configFilePath}`));
       }
     } catch (error) {
       console.log(chalk.red(`❌ 配置文件加载失败:`), error);
@@ -53,46 +54,34 @@ export class ConfigManager {
   }
 
   /**
-   * 创建默认配置
-   * @returns 默认配置对象
+   * 从旧格式（带 default）迁移到新格式
    */
-  private createDefaultConfig(): DeployConfig {
-    return {
-      default: {
-        zip: "dist.zip",
-        buildCommand: "npm run build",
-        versionUpdate: {
-          enabled: false,
-          type: "patch",
-          description: "自动更新 package.json 版本",
-        },
-        steps: {
-          gitCommit: {
-            enabled: false,
-            message: "chore: auto commit before deploy",
-            description: "自动提交本地变更",
-          },
-          backup: {
-            enabled: true,
-            command: "cd $REMOTE && cp -r dist dist.backup || true",
-            description: "远程备份旧版本",
-          },
-          build: {
-            enabled: true,
-            description: "本地构建项目",
-          },
-          zip: {
-            enabled: true,
-            description: "压缩项目文件",
-          },
-          upload: {
-            enabled: true,
-            description: "上传文件到服务器",
-          },
-        },
-      },
-      projects: {},
-    };
+  private migrateOldConfig(oldConfig: any): DeployConfig {
+    const projects: Record<string, ProjectConfig> = {};
+
+    for (const [name, proj] of Object.entries(oldConfig.projects || {})) {
+      const p = proj as any;
+      let base = "/";
+
+      // 从 extract.command 反推 base 路径
+      if (p.steps?.extract?.command) {
+        const cmd: string = p.steps.extract.command;
+        // 匹配 "cd 路由名 && mv * ../ ... rm -rf 路由名"
+        const routeMatch = cmd.match(/cd\s+(\w+)\s+&&\s+mv\s+\*\s+\.\.\/.*rm\s+-rf\s+\1/);
+        if (routeMatch) {
+          base = "/" + routeMatch[1];
+        }
+      }
+
+      projects[name] = {
+        server: p.server,
+        remote: p.remote.replace(/\/+$/, ""),
+        local: p.local,
+        base,
+      };
+    }
+
+    return { projects };
   }
 
   /**
@@ -160,197 +149,79 @@ export class ConfigManager {
   }
 
   /**
+   * 获取已配置的服务器列表（去重）
+   */
+  private getServerList(): string[] {
+    const servers = new Set<string>();
+    for (const project of Object.values(this.config.projects)) {
+      if (project.server) servers.add(project.server);
+    }
+    return Array.from(servers);
+  }
+
+  /**
    * 添加项目
    */
   async addProject(): Promise<void> {
+    const existingServers = this.getServerList();
+
     const answers = await inquirer.prompt([
       {
         type: "input",
         name: "name",
-        message: "请输入项目名称:",
-        default: () => {
-          // 获取当前目录名称作为默认值
-          const currentDir = process.cwd().split(path.sep).pop() || "";
-          return currentDir;
-        },
+        message: "项目名称:",
+        default: () => process.cwd().split(path.sep).pop() || "",
         validate: (input) => {
-          if (!input.trim()) {
-            return "项目名称不能为空";
-          }
-          if (this.config.projects[input]) {
-            return "项目名称已存在";
-          }
+          if (!input.trim()) return "项目名称不能为空";
+          if (this.config.projects[input]) return "项目名称已存在";
           return true;
         },
       },
       {
+        type: existingServers.length > 0 ? "list" : "input",
+        name: "server",
+        message: "服务器地址:",
+        choices: existingServers.length > 0
+          ? [...existingServers.map((s) => ({ name: s, value: s })), { name: "✏️ 输入新的服务器地址", value: "__new__" }]
+          : undefined,
+        default: existingServers[0] || undefined,
+      },
+      {
         type: "input",
-        name: "local",
-        message: "请输入本地项目路径:",
-        default: process.cwd(),
-        validate: (input) => {
-          if (!input.trim()) {
-            return "本地项目路径不能为空";
-          }
-          return true;
-        },
+        name: "server",
+        message: "输入新的服务器地址:",
+        validate: (input) => input.trim() ? true : "服务器地址不能为空",
+        when: (answers) => answers.server === "__new__",
       },
       {
         type: "input",
         name: "remote",
-        message: "请输入远程服务器路径:",
-        validate: (input) => {
-          if (!input.trim()) {
-            return "远程服务器路径不能为空";
-          }
-          return true;
-        },
+        message: "远程部署路径 (如 /home/www/project):",
+        validate: (input) => input.trim() ? true : "远程路径不能为空",
       },
       {
         type: "input",
-        name: "server",
-        message: "请输入服务器地址:",
-        validate: (input) => {
-          if (!input.trim()) {
-            return "服务器地址不能为空";
-          }
-          return true;
-        },
-        when: () => {
-          // 如果没有已配置的服务器，直接显示输入框
-          const servers = new Set<string>();
-          Object.values(this.config.projects).forEach((project) => {
-            servers.add(project.server);
-          });
-          return servers.size === 0;
-        },
-      },
-      {
-        type: "list",
-        name: "serverType",
-        message: "请选择服务器地址类型:",
-        choices: [
-          { name: "从已有服务器中选择", value: "existing" },
-          { name: "输入新的服务器地址", value: "new" },
-        ],
-        when: () => {
-          // 如果有已配置的服务器，显示选择框
-          const servers = new Set<string>();
-          Object.values(this.config.projects).forEach((project) => {
-            servers.add(project.server);
-          });
-          return servers.size > 0;
-        },
-      },
-      {
-        type: "list",
-        name: "server",
-        message: "请选择服务器地址:",
-        choices: () => {
-          // 从现有项目中提取所有服务器地址
-          const servers = new Set<string>();
-          Object.values(this.config.projects).forEach((project) => {
-            servers.add(project.server);
-          });
-          return Array.from(servers);
-        },
-        when: (answers) => {
-          // 如果有已配置的服务器且用户选择了"从已有服务器中选择"，显示服务器列表
-          const servers = new Set<string>();
-          Object.values(this.config.projects).forEach((project) => {
-            servers.add(project.server);
-          });
-          return servers.size > 0 && answers.serverType === "existing";
-        },
+        name: "local",
+        message: "本地项目路径:",
+        default: process.cwd(),
       },
       {
         type: "input",
-        name: "server",
-        message: "请输入新的服务器地址:",
-        validate: (input) => {
-          if (!input.trim()) {
-            return "服务器地址不能为空";
-          }
-          return true;
-        },
-        when: (answers) => {
-          // 如果有已配置的服务器且用户选择了"输入新的服务器地址"，显示输入框
-          const servers = new Set<string>();
-          Object.values(this.config.projects).forEach((project) => {
-            servers.add(project.server);
-          });
-          return servers.size > 0 && answers.serverType === "new";
-        },
-      },
-      {
-        type: "confirm",
-        name: "extractEnabled",
-        message: "是否启用远程解压步骤?",
-        default: true,
-      },
-      {
-        type: "list",
-        name: "extractType",
-        message: "请选择解压类型:",
-        choices: [
-          { name: "正常的解压上传", value: "normal" },
-          { name: "带有路由的解压", value: "router" },
-        ],
+        name: "base",
+        message: "Vite base 路径 (/ 或 /路由名 如 /ship):",
+        default: "/",
       },
     ]);
 
-    const { name, local, remote, server, extractEnabled, extractType } =
-      answers;
-    let extractCommand = "";
-    let extractDescription = "远程解压上传文件";
-
-    // 根据解压类型设置不同的命令和描述
-    if (extractEnabled) {
-      switch (extractType) {
-        case "normal":
-          extractCommand = `cd $REMOTE/dist && unzip $ZIP && rm $ZIP`;
-          break;
-        case "router":
-          // 需要额外询问路由名称
-          const { routerName } = await inquirer.prompt([
-            {
-              type: "input",
-              name: "routerName",
-              message: "请输入路由名称:",
-              validate: (input) => {
-                if (!input.trim()) return "路由名称不能为空";
-                return true;
-              },
-            },
-          ]);
-          extractCommand = `cd $REMOTE/dist && unzip $ZIP && rm $ZIP && cd ${routerName} && mv * ../ && cd .. && rm -rf ${routerName}`;
-          extractDescription = "远程解压上传文件并处理路由";
-          break;
-      }
-    }
-
-    const localPath = local || process.cwd();
-    // 创建新项目配置
-    const newProject = {
-      server,
-      remote,
-      local: localPath,
-      steps: {
-        extract: {
-          enabled: extractEnabled,
-          command: extractCommand,
-          description: extractDescription,
-        },
-      },
+    this.config.projects[answers.name] = {
+      server: answers.server,
+      remote: answers.remote.replace(/\/+$/, ""),
+      local: answers.local,
+      base: answers.base || "/",
     };
 
-    // 添加到配置中
-    this.config.projects[name] = newProject;
-
-    // 保存配置
     await this.saveConfig();
-
-    console.log(chalk.green(`✅ 项目 "${name}" 添加成功`));
+    console.log(chalk.green(`✅ 项目 "${answers.name}" 添加成功`));
   }
 
   /**

@@ -25,10 +25,29 @@ export class Deployer {
   }
 
   /**
-   * 获取项目配置
-   * @param projectName 项目名称
-   * @returns 项目配置
+   * 生成远程解压命令
+   * - base="/"：直接解压到 dist/
+   * - base="/ship"：解压后把 ship/ 子目录内容合并到 dist/ 根目录
    */
+  private buildExtractCommand(base: string, zipName: string): string {
+    var unzip = "cd $REMOTE/dist && unzip " + zipName + " && rm " + zipName;
+
+    if (base === "/" || !base) {
+      return unzip;
+    }
+
+    var routeName = base.replace(/^\//, "").replace(/\/+$/, "");
+    // 解压后：若存在路由子目录，将其内容合并到 dist/ 根目录
+    // 注意：glob (*) 必须在引号外才能展开，所以写成 "routeName"/*
+    var q = '"' + routeName + '"';
+    var mergeCmd =
+      '{ [ ! -d ' + q + ' ] || { ' +
+      'mv ' + q + '/* ./ 2>/dev/null; ' +
+      'mv ' + q + '/.[!.]* ./ 2>/dev/null; ' +
+      'rm -rf ' + q + '; }; }';
+    return unzip + " && " + mergeCmd;
+  }
+
   private getProjectConfig(projectName: string): {
     server: string;
     remote: string;
@@ -71,20 +90,55 @@ export class Deployer {
     };
   } {
     const config = this.configManager.getConfig();
-    const defaultConfig = config.default;
     const projectConfig = config.projects[projectName];
 
-    // 合并默认配置和项目特定配置
+    if (!projectConfig) {
+      throw new Error(`项目 "${projectName}" 不存在`);
+    }
+
+    const base = projectConfig.base || "/";
+    const zipName = "dist.zip";
+    const extractCommand = this.buildExtractCommand(base, zipName);
+
     return {
       server: projectConfig.server,
       remote: projectConfig.remote,
       local: projectConfig.local,
-      zip: defaultConfig.zip,
-      buildCommand: defaultConfig.buildCommand,
-      versionUpdate: defaultConfig.versionUpdate,
+      zip: zipName,
+      buildCommand: projectConfig.buildCommand || "npm run build",
+      versionUpdate: {
+        enabled: projectConfig.versionUpdate !== false,
+        type: "patch",
+        description: "自动更新 package.json 版本",
+      },
       steps: {
-        ...defaultConfig.steps,
-        extract: projectConfig.steps.extract,
+        gitCommit: {
+          enabled: projectConfig.gitCommit !== false,
+          message: "chore: auto commit before deploy",
+          description: "自动提交本地变更",
+        },
+        backup: {
+          enabled: projectConfig.backup !== false,
+          command: "rm -rf $REMOTE/dist.backup && mv $REMOTE/dist $REMOTE/dist.backup && mkdir -p $REMOTE/dist",
+          description: "远程备份旧版本",
+        },
+        build: {
+          enabled: true,
+          description: "本地构建",
+        },
+        zip: {
+          enabled: true,
+          description: "压缩文件",
+        },
+        upload: {
+          enabled: true,
+          description: "上传文件到服务器",
+        },
+        extract: {
+          enabled: true,
+          command: extractCommand,
+          description: "远程解压上传文件",
+        },
       },
     };
   }
@@ -133,6 +187,7 @@ export class Deployer {
     let originalVersion: string | null = null;
     let newVersion: string | null = null;
     let versionUpdateSuccess = false;
+    let backupSucceeded = false;
 
     // ✅ Step 1: 先本地构建（确保代码可构建）
     if (projectConfig.steps.build.enabled) {
@@ -205,14 +260,16 @@ export class Deployer {
         projectConfig.steps.backup.command || "",
         projectConfig
       );
-      success = await executeCommand(
+      const backupOk = await executeCommand(
         `ssh "${projectConfig.server}" "${command}"`,
         projectConfig.steps.backup.description || "备份当前线上版本",
         { silent: true }
       );
-      if (!success) {
+      if (!backupOk) {
         console.log(chalk.yellow("⚠️ 备份失败，但继续部署流程"));
         // 备份失败不影响后续流程
+      } else {
+        backupSucceeded = true;
       }
     }
 
@@ -262,22 +319,37 @@ export class Deployer {
         { silent: true }
       );
       if (!success) {
-        console.log(chalk.red("❌ 切换版本失败，请手动处理"));
+        console.log(chalk.red("❌ 切换版本失败"));
 
-        if (versionUpdateSuccess && originalVersion) {
-          console.log(chalk.yellow("⚠️ 自动回退本地版本..."));
-          await revertPackageVersion(projectConfig.local, originalVersion);
-          console.log(chalk.red("❌ 部署失败，版本已回退"));
+        // 远端回滚：删除损坏的 dist，从备份恢复
+        if (backupSucceeded) {
+          console.log(chalk.yellow("⚠️ 正在从备份恢复远端版本..."));
+          const rollbackRemote = projectConfig.remote.replace(/\/+$/, "");
+          await executeCommand(
+            `ssh "${projectConfig.server}" "rm -rf ${rollbackRemote}/dist && mv ${rollbackRemote}/dist.backup ${rollbackRemote}/dist"`,
+            "远端版本回滚",
+            { silent: true }
+          );
+          console.log(chalk.green("✅ 远端版本已恢复"));
+        } else {
+          console.log(chalk.yellow("⚠️ 无远端备份，请手动检查服务器状态"));
         }
+
+        // 回退本地版本
+        if (versionUpdateSuccess && originalVersion) {
+          console.log(chalk.yellow("⚠️ 回退本地版本..."));
+          await revertPackageVersion(projectConfig.local, originalVersion);
+        }
+        console.log(chalk.red("❌ 部署失败"));
         return;
       }
     }
 
-    // 删除远端压缩包
+    // 清理远端临时文件
     const cleanBase = projectConfig.remote.replace(/\/+$/, "");
     await executeCommand(
-      `ssh "${projectConfig.server}" "rm -f ${cleanBase}/dist/${projectConfig.zip}"`,
-      "清理远端压缩包",
+      `ssh "${projectConfig.server}" "rm -f ${cleanBase}/dist/${projectConfig.zip} && rm -rf ${cleanBase}/dist.backup"`,
+      "清理远端临时文件",
       { silent: true }
     );
 

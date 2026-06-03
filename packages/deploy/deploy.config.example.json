@@ -1,60 +1,16 @@
 {
-  "default": {
-    "zip": "dist.zip",
-    "buildCommand": "bun run build",
-    "versionUpdate": {
-      "enabled": false,
-      "type": "patch",
-      "description": "自动更新 package.json 版本"
-    },
-    "steps": {
-      "gitCommit": {
-        "enabled": false,
-        "message": "chore: auto commit before deploy",
-        "description": "自动提交本地变更"
-      },
-      "backup": {
-        "enabled": true,
-        "command": "mv $REMOTE/dist $REMOTE/dist_$(date +%Y%m%d_%H%M%S) 2>/dev/null || true; mkdir -p $REMOTE/dist"
-      },
-      "build": {
-        "enabled": true,
-        "description": "本地构建"
-      },
-      "zip": {
-        "enabled": true,
-        "description": "压缩文件"
-      },
-      "upload": {
-        "enabled": true,
-        "description": "上传文件"
-      }
-    }
-  },
   "projects": {
-    "react-bun": {
-      "server": "root@xxxx.top",
-      "remote": "/home/www/react-bun/",
-      "local": "D:\\project\\user\\bun-react",
-      "steps": {
-        "extract": {
-          "enabled": true,
-          "command": "cd $REMOTE/dist && unzip $ZIP && rm -r $ZIP && cd ship && mv * ../",
-          "description": "远程解压并清理"
-        }
-      }
+    "my-project": {
+      "server": "user@your-server.com",
+      "remote": "/home/www/my-project",
+      "local": "/path/to/your/local/project",
+      "base": "/"
     },
-    "vue-project": {
-      "server": "user@example.com",
-      "remote": "/var/www/vue-app/",
-      "local": "D:\\project\\user\\vue-project",
-      "steps": {
-        "extract": {
-          "enabled": true,
-          "command": "cd $REMOTE && unzip $ZIP && rm $ZIP",
-          "description": "远程解压并清理"
-        }
-      }
+    "my-subroute-project": {
+      "server": "user@your-server.com",
+      "remote": "/home/www/my-other-project",
+      "local": "/path/to/your/local/project",
+      "base": "/ship"
     }
   }
 }

@@ -1,55 +1,26 @@
 import * as os from "os";
 import * as path from "path";
 
-export interface DefaultConfig {
-  zip: string;
-  buildCommand: string;
-  versionUpdate: {
-    enabled: boolean;
-    type: "major" | "minor" | "patch";
-    description?: string;
-  };
-  steps: {
-    gitCommit: {
-      enabled: boolean;
-      message?: string;
-      description?: string;
-    };
-    backup: {
-      enabled: boolean;
-      command?: string;
-      description?: string;
-    };
-    build: {
-      enabled: boolean;
-      description?: string;
-    };
-    zip: {
-      enabled: boolean;
-      description?: string;
-    };
-    upload: {
-      enabled: boolean;
-      description?: string;
-    };
-  };
-}
-
+/**
+ * 项目配置（用户只需填这些）
+ */
 export interface ProjectConfig {
   server: string;
   remote: string;
   local: string;
-  steps: {
-    extract: {
-      enabled: boolean;
-      command?: string;
-      description?: string;
-    };
-  };
+  /** Vite base 路径，"/" 表示根路径，"/ship" 表示子路径 */
+  base: string;
+  /** 构建命令，默认 "npm run build" */
+  buildCommand?: string;
+  /** 是否自动更新版本号，默认 true */
+  versionUpdate?: boolean;
+  /** 是否自动 git commit，默认 true */
+  gitCommit?: boolean;
+  /** 是否远程备份，默认 true */
+  backup?: boolean;
 }
 
 export interface DeployConfig {
-  default: DefaultConfig;
   projects: Record<string, ProjectConfig>;
 }
 
