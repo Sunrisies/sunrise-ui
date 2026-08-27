@@ -1,6 +1,6 @@
 {
   "name": "sunrise-cesium-utils",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "type": "module",
   "description": "Cesium tool library",
   "main": "dist/iife/index.js",
@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "tsc": "tsc",
-    "dev": "tsup --watch",
+    "dev": "pnpm exec tsup --watch",
     "build": "tsup",
     "push": "node publish.js"
   },
@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "tsup": "8.5.1",
-    "typescript": "5.9.3"
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "@swc/core": "^1.15.30",
