@@ -195,7 +195,7 @@ export class Http {
   get<TResponse>(
     endpoint: string,
     config?: Omit<RequestConfig, "data" | "method">
-  ) {
+  ): Promise<TResponse>  {
     return this.request<TResponse>(endpoint, { ...config, method: "GET" });
   }
   /**
@@ -230,7 +230,7 @@ export class Http {
     endpoint: string,
     data?: T,
     config?: Omit<RequestConfig, "data" | "method">
-  ) {
+  ):Promise<TResponse> {
     return this.request<TResponse, T>(endpoint, {
       ...config,
       data,
@@ -270,7 +270,7 @@ export class Http {
     endpoint: string,
     data?: T,
     config?: Omit<RequestConfig, "data" | "method">
-  ) {
+  ) :Promise<TResponse>{
     return this.request<TResponse, T>(endpoint, {
       ...config,
       data,
@@ -303,7 +303,7 @@ export class Http {
   delete<TResponse>(
     endpoint: string,
     config?: Omit<RequestConfig, "data" | "method">
-  ) {
+  ):Promise<TResponse> {
     return this.request<TResponse>(endpoint, { ...config, method: "DELETE" });
   }
 }
@@ -334,7 +334,7 @@ export class Http {
  * // 返回 'active=true&count=42'
  * ```
  */
-export function URLSearchParamsUtils(data: { [key: string]: any }) {
+export function URLSearchParamsUtils(data: { [key: string]: any }):string {
   const searchParams = new URLSearchParams();
 
   for (const [key, value] of Object.entries(data)) {

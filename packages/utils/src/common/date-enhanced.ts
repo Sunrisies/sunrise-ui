@@ -801,7 +801,18 @@ function getTimezoneOffset(timezone: string): number {
 export function isValidDate(date: any): boolean {
   return date instanceof Date && !isNaN(date.getTime());
 }
-
+interface DateComponents {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  millisecond: number;
+  dayOfWeek: number; // 1（周一）~ 7（周日）
+  timestamp: number;
+  isoString: string;
+}
 /**
  * 获取日期组件
  * @description 获取日期的各个组成部分
@@ -823,7 +834,7 @@ export function isValidDate(date: any): boolean {
  * // }
  * ```
  */
-export function getDateComponents(date: Date | number | string) {
+export function getDateComponents(date: Date | number | string):DateComponents {
   const d = new Date(date);
   if (isNaN(d.getTime())) {
     throw new TypeError("Invalid date provided");

@@ -61,7 +61,14 @@ export interface TileID {
   /** 行坐标 */
   y: number;
 }
-
+interface TileCacheReturn {
+  loadTile: (tileID: TileID, options?: { signal: AbortSignal }) => Promise<ImageBitmap>;
+  unloadTile: (tileID: TileID) => void;
+  getCacheStats: () => Promise<TileCacheStats>;
+  clearCache: () => Promise<void>;
+  createRasterSource: () => CustomSourceInterface<ImageBitmap>;
+  getTileUrl: (tileID: TileID) => string;
+}
 /**
  * 瓦片缓存工具类，用于缓存地图瓦片资源
  * @public
@@ -71,7 +78,7 @@ export interface TileID {
  *
  * @func 瓦片缓存工具类，用于缓存地图瓦片资源
  */
-export const useTileCache = (config: TileCacheConfig = {}) => {
+export const useTileCache = (config: TileCacheConfig = {}):TileCacheReturn => {
   const {
     dbName = "TileCacheDB",
     urlTemplate = "",

@@ -79,7 +79,7 @@ function validateCoordinates(min: number, max: number) {
  * out_of_china(116.4074, 39.9042) // false
  * ```
  */
-export function out_of_china(lng: number, lat: number) {
+export function out_of_china(lng: number, lat: number):Boolean {
   return (
     lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271 || false
   );

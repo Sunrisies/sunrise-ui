@@ -8,13 +8,18 @@ export interface Cache {
 export interface Config {
   dbName: string;
 }
-
+interface UseLocalStoreReturn {
+  getCacheByKey: (key: string) => Promise<CacheValue | null>;
+  setCacheToLocal: (key: string, value: CacheValue) => Promise<void>;
+  clearCache: () => Promise<void>;
+  getCacheSize: () => Promise<string>;
+}
 /**
  * 格式化使用的内存大小
  * @param size - 内存大小（字节）
  * @returns 格式化后的内存大小字符串
  */
-export const formatMemorySize = (size: number) => {
+export const formatMemorySize = (size: number): string => {
   if (size < 1024) {
     return `${size} B`;
   }
@@ -33,7 +38,7 @@ export const formatMemorySize = (size: number) => {
  * @author 朝阳
  * @version 1.0.0
  */
-export function useLocalStore(config: Config = { dbName: "LocalStore" }) {
+export function useLocalStore(config: Config = { dbName: "LocalStore" }):UseLocalStoreReturn {
   const { dbName = "LocalStore" } = config;
   const db = new Dexie(dbName) as Dexie & {
     cache: EntityTable<Cache, "key">;
@@ -47,7 +52,7 @@ export function useLocalStore(config: Config = { dbName: "LocalStore" }) {
    * @param key - 缓存键
    * @returns 缓存的数据
    */
-  const getCacheByKey = async (key: string) => {
+  const getCacheByKey = async (key: string):string => {
     const { value } = (await db.cache.where({ key }).first()) || {
       value: null,
     };
